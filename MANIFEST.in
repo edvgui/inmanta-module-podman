@@ -1,0 +1,5 @@
+include inmanta_plugins/podman/setup.cfg
+include inmanta_plugins/podman/py.typed
+recursive-include inmanta_plugins/podman/model *.cf
+graft inmanta_plugins/podman/files
+graft inmanta_plugins/podman/templates
