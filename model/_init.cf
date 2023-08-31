@@ -15,6 +15,38 @@
 
     Contact: edvgui@gmail.com
 """
-greeting = hello("world")
+import std
 
-std::print(greeting)
+
+entity Host:
+    """
+    Entity that represents a host on which podman is running
+    and we wish to configure some resources on.
+
+    :attr hostname: The hostname of the host, this will be use
+        to establish an ssh connection to the host.
+    """
+    string host
+end
+Host.agent_config [1] -- std::AgentConfig
+
+index Host(host)
+
+
+entity ResourceABC extends std::PurgeableResource:
+    """
+    Base resource for all podman resources.
+    """
+end
+ResourceABC.host [1] -- Host
+
+
+implementation agent_config for Host:
+    self.agent_config = std::AgentConfig(
+        autostart=true,
+        agentname=self.host,
+    )
+end
+
+
+implement Host using agent_config

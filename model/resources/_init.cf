@@ -1,0 +1,64 @@
+"""
+    Copyright 2023 Guillaume Everarts de Velp
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+    Contact: edvgui@gmail.com
+"""
+
+
+entity Network extends ResourceABC:
+    """
+    Create a podman network, using the podman cli.
+    podman network create [options] [name]
+    cf. https://docs.podman.io/en/latest/markdown/podman-network-create.1.html
+
+    :attr name: The name of the network
+    :attr dns_enabled: Whether to enable the dns plugin
+    :attr dns: DNS servers this network will use
+    :attr internal: Restrict external access from this network
+    :attr driver: Driver to manage the network (default "bridge")
+    :attr ipv6_enabled: Enable IPv6 networking
+    :attr labels: Set metadata on a network
+    """
+    string name
+    bool dns_enabled = true
+    string[] dns = []
+    bool internal = false
+    string? driver = null
+    bool ipv6_enabled = false
+    dict labels = {}
+end
+Network.subnets [0:] -- Subnet.network [1]
+
+index Network(host, name)
+
+
+entity Subnet:
+    """
+    A subnet that is part of a network.
+    This is useful to set a static ipv4 and ipv6 subnet.
+    cf. https://docs.podman.io/en/latest/markdown/podman-network-create.1.html
+
+    :attr subnet: Subnet in CIDR format
+    :attr gateway: IPv4 or IPv6 gateway for the subnet
+    """
+    string subnet
+    string? gateway = null
+end
+
+index Subnet(network, subnet)
+
+
+implement Network using std::none
+implement Subnet using std::none
