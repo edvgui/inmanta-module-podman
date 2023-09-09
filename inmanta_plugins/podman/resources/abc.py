@@ -15,7 +15,7 @@
 
     Contact: edvgui@gmail.com
 """
-import fabric
+import typing
 
 import inmanta.agent.handler
 import inmanta.execute.proxy
@@ -24,36 +24,65 @@ import inmanta.resources
 
 
 class ResourceABC(inmanta.resources.PurgeableResource):
-    fields = ("host",)
+    fields = (
+        "owner",
+        "name",
+    )
 
     @classmethod
-    def get_host(
+    def get_q(
         cls,
         exporter: inmanta.export.Exporter,
         entity: inmanta.execute.proxy.DynamicProxy,
-    ) -> dict:
-        """
-        Build the host config, containing the information required to reach the
-        host.
-        """
-        return {
-            "host": entity.host.host,
-        }
+    ) -> str:
+        return f"owner={entity.owner}&name={entity.name}"
 
 
 class HandlerABC(inmanta.agent.handler.CRUDHandler):
-    def pre(
+    def run_command(
         self,
         ctx: inmanta.agent.handler.HandlerContext,
         resource: inmanta.resources.Resource,
-    ) -> None:
-        self.connection = fabric.Connection(**resource.host)
-        return super().pre(ctx, resource)
+        *,
+        command: list[str],
+        timeout: int,
+        cwd: typing.Optional[str] = None,
+        env: dict[str, str] = {},
+        run_as: typing.Optional[str] = None,
+    ) -> tuple[str, str, int]:
+        """
+        Execute a command on the host targeted by the agent, and return the result.
+        The returned value is a tuple containing in that order: stdout, stderr, return code.
 
-    def post(
-        self,
-        ctx: inmanta.agent.handler.HandlerContext,
-        resource: inmanta.resources.Resource,
-    ) -> None:
-        self.connection.close()
-        return super().post(ctx, resource)
+        :param ctx: The handler context object used by the handler at runtime
+        :param resource: The resource object used by the handler at runtime
+        :param command: The command to run on the host
+        :param timeout: The maximum duration the command can take to run
+        :param cwd: The directory in which the command should be executed
+        :param env: Some environment variables to pass to the command
+        :param run_as: The user that should be running the command, defaults to the
+            resource owner.
+        """
+        if run_as is None:
+            run_as = str(resource.owner)
+
+        # The io helper will always run command as root, if we want to use another
+        # user, we have to use sudo to change user.
+        if run_as != "root":
+            command = ["sudo", "-E", "-u", run_as, "--", *command]
+
+        # Run the command on the host
+        stdout, stderr, return_code = self._io.run(
+            command[0], command[1:], env or None, cwd, timeout=timeout
+        )
+
+        # Log the command output
+        ctx.debug(
+            "%(cmd)s",
+            cmd=str(command),
+            stdout=stdout,
+            stderr=stderr,
+            return_code=return_code,
+        )
+
+        return stdout, stderr, return_code

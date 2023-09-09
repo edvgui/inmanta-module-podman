@@ -1,0 +1,45 @@
+[Unit]
+Description=Podman pod-{{ pod.name }}.service
+Documentation=https://github.com/edvgui/inmanta-module-podman
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=/run/user/%U/containers
+{%- for container in pod.containers %}
+Wants=container-{{ container.name }}.service
+Before=container-{{ container.name }}.service
+{%- endfor %}
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/usr/bin/podman pod create \
+        --infra-conmon-pidfile %t/pod-{{ pod.name }}.pid \
+        --pod-id-file %t/pod-{{ pod.name }}.pod-id \
+        --exit-policy=stop \
+        --replace \
+        {% for network in pod.networks -%}
+        --network={{ network.cli_option }} \
+        {% endfor -%}
+        {% for publish in pod.publish -%}
+        --publish={{ publish.cli_option }} \
+        {% endfor -%}
+        {% if pod.hostname is not none -%}
+        --hostname={{ pod.hostname }} \
+        {% endif -%}
+        --name={{ pod.name }}
+ExecStart=/usr/bin/podman pod start \
+        --pod-id-file %t/pod-{{ pod.name }}.pod-id
+ExecStop=/usr/bin/podman pod stop \
+        --ignore \
+        --pod-id-file %t/pod-{{ pod.name }}.pod-id  \
+        -t 10
+ExecStopPost=/usr/bin/podman pod rm \
+        --ignore \
+        -f \
+        --pod-id-file %t/pod-{{ pod.name }}.pod-id
+PIDFile=%t/pod-{{ pod.name }}.pid
+Type=forking
+
+[Install]
+WantedBy=default.target

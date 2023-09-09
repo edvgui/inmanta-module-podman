@@ -15,3 +15,22 @@
 
     Contact: edvgui@gmail.com
 """
+
+
+entity Subnet:
+    """
+    A subnet that is part of a network.
+    This is useful to set a static ipv4 and ipv6 subnet.
+    cf. https://docs.podman.io/en/latest/markdown/podman-network-create.1.html
+
+    :attr subnet: Subnet in CIDR format
+    :attr gateway: IPv4 or IPv6 gateway for the subnet
+    """
+    string subnet
+    string? gateway = null
+end
+
+index Subnet(network, subnet)
+
+
+implement Subnet using std::none

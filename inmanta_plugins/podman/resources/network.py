@@ -16,10 +16,7 @@
     Contact: edvgui@gmail.com
 """
 import json
-import shlex
 import typing
-
-import invoke.runners
 
 import inmanta.agent.handler
 import inmanta.const
@@ -68,15 +65,12 @@ def merge(
 
 
 @inmanta.resources.resource(
-    name="podman::resources::Network",
-    id_attribute="name",
-    agent="host.agent_config.agentname",
+    name="podman::Network",
+    id_attribute="q",
+    agent="host.name",
 )
 class NetworkResource(inmanta_plugins.podman.resources.abc.ResourceABC):
-    fields = (
-        "name",
-        "config",
-    )
+    fields = ("config",)
 
     @classmethod
     def get_config(
@@ -111,6 +105,8 @@ def build_create_command(config: dict) -> list[str]:
     """
     Helper method to build the podman network create command based on
     the config that can be read from the resource.
+
+    :param config: The config that should be converted to a create command.
     """
     # Build the create command
     cmd = ["podman", "network", "create"]
@@ -133,7 +129,11 @@ def build_create_command(config: dict) -> list[str]:
         cmd.extend(["--subnet", ",".join(subnets)])
 
         # Create the gateways list
-        gateways = [sub["gateway"] for sub in config["subnets"]]
+        gateways = [
+            sub["gateway"]
+            for sub in config["subnets"]
+            if sub.get("gateway", None) is not None
+        ]
         if gateways:
             cmd.extend(["--gateway", ",".join(gateways)])
 
@@ -142,7 +142,7 @@ def build_create_command(config: dict) -> list[str]:
     return cmd
 
 
-@inmanta.agent.handler.provider("podman::resources::Network", "")
+@inmanta.agent.handler.provider("podman::Network", "")
 class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
     def calculate_diff(
         self,
@@ -176,32 +176,30 @@ class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
         resource: inmanta.resources.PurgeableResource,
     ) -> None:
         # Run the inspect command on the remote host
-        cmd = shlex.join(["podman", "network", "inspect", resource.name])
-        res: invoke.runners.Result = self.connection.run(
-            command=cmd,
+        command = ["podman", "network", "inspect", resource.name]
+        stdout, stderr, ret = self.run_command(
+            ctx,
+            resource,
+            command=command,
             timeout=5,
-            warn=True,
         )
 
-        # Log the command output
-        ctx.debug("%(cmd)s", cmd=cmd, stdout=res.stdout)
-
         # If we receive an empty list, our network doesn't exist
-        if res.stdout.strip() == "[]":
-            ctx.info("%(stderr)s", stderr=res.stderr)
+        if stdout.strip() == "[]":
+            ctx.info("%(stderr)s", stderr=stderr)
             raise inmanta.agent.handler.ResourcePurged()
 
         # If the command failed, something went wrong
-        if not res.ok:
+        if ret != 0:
             ctx.error(
                 "%(stderr)s",
-                exit_code=res.return_code,
-                stderr=res.stderr,
+                exit_code=ret,
+                stderr=stderr,
             )
             raise RuntimeError("Failed to inspect network")
 
         # Load the inspect result
-        resource.config = json.loads(res.stdout)[0]
+        resource.config = json.loads(stdout)[0]
 
     def create_resource(
         self,
@@ -209,22 +207,20 @@ class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
         resource: inmanta.resources.PurgeableResource,
     ) -> None:
         # Run the create command on the remote host
-        cmd = shlex.join(build_create_command(resource.config))
-        res: invoke.runners.Result = self.connection.run(
-            command=cmd,
+        command = build_create_command(resource.config)
+        _, stderr, ret = self.run_command(
+            ctx,
+            resource,
+            command=command,
             timeout=5,
-            warn=True,
         )
 
-        # Log the command output
-        ctx.debug("%(cmd)s", cmd=cmd, stdout=res.stdout)
-
         # If the command failed, something went wrong
-        if not res.ok:
+        if ret != 0:
             ctx.error(
                 "%(stderr)s",
-                exit_code=res.return_code,
-                stderr=res.stderr,
+                exit_code=ret,
+                stderr=stderr,
             )
             raise RuntimeError("Failed to create network")
 
@@ -256,22 +252,20 @@ class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
         resource: inmanta.resources.PurgeableResource,
     ) -> None:
         # Run the create command on the remote host
-        cmd = shlex.join(["podman", "network", "remove", resource.name])
-        res: invoke.runners.Result = self.connection.run(
-            command=cmd,
+        command = ["podman", "network", "remove", resource.name]
+        _, stderr, ret = self.run_command(
+            ctx,
+            resource,
+            command=command,
             timeout=5,
-            warn=True,
         )
 
-        # Log the command output
-        ctx.debug("%(cmd)s", cmd=cmd, stdout=res.stdout)
-
         # If the command failed, something went wrong
-        if not res.ok:
+        if ret != 0:
             ctx.error(
                 "%(stderr)s",
-                exit_code=res.return_code,
-                stderr=res.stderr,
+                exit_code=ret,
+                stderr=stderr,
             )
             raise RuntimeError("Failed to remove network")
 

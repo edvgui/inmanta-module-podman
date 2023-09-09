@@ -24,5 +24,3 @@ def test_basics(project: Project) -> None:
             import podman
         """
     )
-
-    assert project.get_stdout() == "hello world\n"

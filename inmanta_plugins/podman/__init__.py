@@ -15,3 +15,26 @@
 
     Contact: edvgui@gmail.com
 """
+import inmanta.plugins
+
+
+@inmanta.plugins.plugin()
+def inline_options(options: "dict") -> "string":  # type: ignore
+    """
+    Convert a dict of options into a comma-separated list of key=value pairs.
+
+    :param options: The options dict to serialize into a string.
+    """
+    return ",".join(f"{k}={v}" for k, v in options.items() if v is not None)
+
+
+@inmanta.plugins.plugin()
+def join(parts: "string[]", *, separator: "string") -> "string":  # type: ignore
+    """
+    Join all the elements in the list together, use the separator in
+    between each joined part.
+
+    :param parts: The list of string we want to join
+    :param separator: The separator to use in the join
+    """
+    return separator.join(parts)

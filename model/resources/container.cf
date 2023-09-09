@@ -1,0 +1,59 @@
+"""
+    Copyright 2023 Guillaume Everarts de Velp
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+    Contact: edvgui@gmail.com
+"""
+import podman
+
+
+entity Volume:
+    """
+    Create a bind mount.
+
+    cf. https://docs.podman.io/en/latest/markdown/podman-container-create.1.html
+        #volume-v-source-volume-host-dir-container-dir-options
+
+    :attr source: If a volume source is specified, it must be a path on the host or the
+        name of a named volume.
+    :attr container_dir: The container_dir must be an absolute path such as /src/docs.
+        The volume is mounted into the container at this directory.
+    :attr options: Bind mount options.  For the full list of options, see the podman
+        documentation.  
+    """
+    string? source = null
+    string container_dir
+    string[] options = []
+
+    string cli_option
+end
+
+index Volume(container, container_dir)
+
+
+implementation volume_cli_options for Volume:
+    """
+    Compose the cli option required to bind bound the volume inside
+    of a container.
+    """
+    source = self.source is defined ? f"{self.source}:" : ""
+    options = podman::join(self.options, separator=",")
+
+    self.cli_option = options != ""
+        ? f"{source}{self.container_dir}:{options}"
+        : f"{source}{self.container_dir}"
+end
+
+
+implement Volume using volume_cli_options

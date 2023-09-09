@@ -16,37 +16,110 @@
     Contact: edvgui@gmail.com
 """
 import std
-
-
-entity Host:
-    """
-    Entity that represents a host on which podman is running
-    and we wish to configure some resources on.
-
-    :attr hostname: The hostname of the host, this will be use
-        to establish an ssh connection to the host.
-    """
-    string host
-end
-Host.agent_config [1] -- std::AgentConfig
-
-index Host(host)
+import podman::resources::container
+import podman::resources::network
+import podman::resources::pod
 
 
 entity ResourceABC extends std::PurgeableResource:
     """
     Base resource for all podman resources.
+
+    A podman resource is identified by its name, and its owner.  A name
+    should be unique across all resources types.
+
+    :attr owner: The resource owner, on the host where podman is running.
+        This should be an existing user on the machine.
+    :attr name: The resource name
     """
+    string owner = "root"
+    string name
 end
-ResourceABC.host [1] -- Host
+ResourceABC.host [1] -- std::Host
+
+index ResourceABC(host, owner, name)
 
 
-implementation agent_config for Host:
-    self.agent_config = std::AgentConfig(
-        autostart=true,
-        agentname=self.host,
-    )
+entity Network extends ResourceABC:
+    """
+    Create a podman network, using the podman cli.
+    podman network create [options] [name]
+    cf. https://docs.podman.io/en/latest/markdown/podman-network-create.1.html
+
+    :attr dns_enabled: Whether to enable the dns plugin
+    :attr dns: DNS servers this network will use
+    :attr internal: Restrict external access from this network
+    :attr driver: Driver to manage the network (default "bridge")
+    :attr ipv6_enabled: Enable IPv6 networking
+    :attr labels: Set metadata on a network
+    """
+    bool dns_enabled = true
+    string[] dns = []
+    bool internal = false
+    string? driver = null
+    bool ipv6_enabled = false
+    dict labels = {}
+end
+Network.subnets [0:] -- podman::resources::network::Subnet.network [1]
+
+
+entity Pod extends ResourceABC:
+    """
+    Run a pod.
+    
+    :attr hostname: Set a hostname to the pod.
+    :attr labels: Add metadata to a pod.
+    """
+    string? hostname = null
+    dict labels = {}
+end
+Pod.networks [0:] -- podman::resources::pod::Network.pod [1]
+Pod.publish [0:] -- podman::resources::pod::Publish.pod [1]
+
+
+entity Container extends ResourceABC:
+    """
+    Run a process in a new container. 
+    
+    Podman run starts a process with its own file system, its own networking,
+    and its own isolated process tree.
+
+    :attr image: The image of the container
+    :attr name: The name of the container
+    :attr env: Set environment variables.
+    :attr env_file: Read the environment variables from the file.
+    """
+    string image
+    dict env = {}
+    string? env_file = null
+end
+Container.pod [0:1] -- Pod.containers [0:]
+Container.volumes [0:] -- podman::resources::container::Volume.container [1]
+
+
+implementation require_agent_config for ResourceABC:
+    """
+    Resources in this module expect the agent name to match the host name.
+    This implementation makes sure that the agent config resource is always
+    deployed before our resources.
+    """
+    agent_config = std::AgentConfig[agentname=self.host.name]
+    agent_config.provides = self
 end
 
 
-implement Host using agent_config
+implementation pod_consistency for Container:
+    """
+    Make sure that a container is configured to run on the same host as the pod it
+    is part of.  If this is not the case, this will trigger a DoubleSetException.
+    """
+    self.host = self.pod.host
+    self.owner = self.pod.owner
+end
+
+
+implement ResourceABC using require_agent_config
+implement Network using parents
+implement Pod using parents
+implement Container using parents
+implement Container using pod_consistency when self.pod is defined

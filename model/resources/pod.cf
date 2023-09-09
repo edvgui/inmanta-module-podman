@@ -1,0 +1,115 @@
+"""
+    Copyright 2023 Guillaume Everarts de Velp
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+    Contact: edvgui@gmail.com
+"""
+import podman
+
+
+entity Network:
+    """
+    Configure the networking for a pod.  Each implementation knows
+    how to refine itself into the corresponding cli_option that can
+    be used to connect the pod to the network when the pod is created.
+
+    :attr cli_option: The argument passed to the network cli option.
+    """
+    string cli_option
+end
+
+entity BridgeNetwork extends Network:
+    """
+    Create or connect to a user-defined network bridge.
+
+    :attr name: The name of the network.  If the string is non-empty,
+        it will refer to an already existing network.  If the string is
+        empty, a default network for the pod is created.
+    :attr alias: Add network-scoped alias for the container.
+    :attr ip: Specify a static ipv4/ipv4 address for this container.
+    :attr mac: Specify a static mac address for this container.
+    :attr interface_name: Specify a name for the created network interface
+        inside the container.
+    """
+    string name = ""
+    string? alias = null
+    string? ip = null
+    string? mac = null
+    string? interface_name = null
+end
+
+
+entity Publish:
+    """
+    Publish a container's port, or range of ports, within this pod to the host.
+
+    Both hostPort and containerPort can be specified as a range of ports. When
+    specifying ranges for both, the number of container ports in the range must
+    match the number of host ports in the range.
+
+    If host IP is set to 0.0.0.0 or not set at all, the port is bound on all IPs on the host.
+
+    :attr ip: The ip to bind the port to
+    :attr host_port: A port, or range of ports (in the format 123-456) to map on the
+        host side to container ports.
+    :attr container_port: A port, or range of ports (in the format 123-456) to map
+        on the container side to host ports.
+    :attr protocol: The transport protocol to enable on this port.
+    """
+    string? ip = null
+    string? host_port = null
+    string container_port
+    string? protocol = null
+
+    string cli_option
+end
+
+index Publish(pod, container_port)
+
+
+implementation bridge_cli_option for BridgeNetwork:
+    """
+    Compose the cli option required to connect the pod to a bridge.
+    """
+    network_name = self.name == "" ? "bridge" : self.name
+
+    options = podman::inline_options(
+        {
+            "alias": self.alias,
+            "ip": self.ip,
+            "mac": self.mac,
+            "interface_name": self.interface_name,
+        }
+    )
+
+    self.cli_option = options == "" ? network_name : f"{network_name}:{options}"
+end
+
+
+implementation publish_cli_option for Publish:
+    """
+    Compose the cli option required to expose some container port
+    to the host network.
+    """
+    host = self.host_port is defined ? f"{self.host_port}:" : ":"
+    host_with_ip = self.ip is defined ? f"{self.ip}:{host}" : host
+    port = host_with_ip != ":" ? f"{host_with_ip}{self.container_port}" : self.container_port
+
+    self.cli_option = self.protocol is defined ? f"{port}/{self.protocol}" : port
+end
+
+
+implement Network using std::none
+implement BridgeNetwork using bridge_cli_option
+implement Publish using publish_cli_option
