@@ -88,10 +88,14 @@ entity Container extends ResourceABC:
     :attr name: The name of the container
     :attr env: Set environment variables.
     :attr env_file: Read the environment variables from the file.
+    :attr entrypoint: Override the default ENTRYPOINT from the image.
+    :attr command: Override the default COMMAND from the image.
     """
     string image
     dict env = {}
     string? env_file = null
+    string? entrypoint = null
+    string? command = null
 end
 Container.pod [0:1] -- Pod.containers [0:]
 Container.volumes [0:] -- podman::resources::container::Volume.container [1]
