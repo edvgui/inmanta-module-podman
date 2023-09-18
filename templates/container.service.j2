@@ -35,11 +35,7 @@ ExecStart=/usr/bin/podman run \
         {% if container.entrypoint is not none -%}
         --entrypoint={{ container.entrypoint }} \
         {% endif -%}
-        {{ container.image }}
-        {%- if container.command is not none -%}
-        \
-        {{ container.command }}
-        {% endif -%}
+        {{ container.image }} {% if container.command is not none %}{{ container.command }}{% endif %}
 ExecStop=/usr/bin/podman stop \
         --ignore -t 10 \
         --cidfile=%t/%n.ctr-id
