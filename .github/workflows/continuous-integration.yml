@@ -22,8 +22,7 @@ jobs:
           architecture: 'x64'
       - name: Install dependencies
         run: |
-          pip install -U pip inmanta -r requirements.dev.txt
-          inmanta -vvv module install -e .
+          pip install -U pip -r requirements.dev.txt -e . -c requirements.txt
           pip list | grep inmanta
       - name: Lint with flake8
         run: |
