@@ -17,11 +17,20 @@ ExecStart=/usr/bin/podman run \
         --cidfile=%t/%n.ctr-id \
         --cgroups=no-conmon \
         {% if container.pod is not none -%}
-        --pod-id-file %t/pod-{{ container.pod.name }}.pod-id \
+        --pod-id-file=%t/pod-{{ container.pod.name }}.pod-id \
         {% endif -%}
         --sdnotify=conmon \
         -d \
         --replace \
+        {% for network in container.networks -%}
+        --network={{ network.cli_option }} \
+        {% endfor -%}
+        {% for publish in container.publish -%}
+        --publish={{ publish.cli_option }} \
+        {% endfor -%}
+        {% if container.hostname is not none -%}
+        --hostname={{ container.hostname }} \
+        {% endif -%}
         --name={{ container.name }} \
         {% for volume in container.volumes -%}
         --volume={{ volume.cli_option }} \

@@ -17,16 +17,18 @@
 """
 import podman
 import podman::resources
+import podman::services::systemd_container
 import podman::services::systemd_pod
+import podman::services::systemd_service
 
 
-typedef pod_state_t as string matching self in ["stopped", "running", "removed"]
+typedef service_state_t as string matching self in ["stopped", "running", "removed"]
 
 
-entity SystemdPod:
+entity SystemdService:
     """
-    A systemd pod is an entity that will be refined into a systemd config file.
-    Each container that is attached to the pod will also have its own systemd
+    A systemd service is an entity that will be refined into a systemd config file.
+    Each container or pod that is part of the service will also have its own systemd
     config file.
 
     This entity offers some kind of lifecycle which has three states:
@@ -37,9 +39,30 @@ entity SystemdPod:
 
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
+
+    :attr _service_name: Attribute used internally to save the name of the top-level
+        service to manage.
     """
-    pod_state_t state
+    service_state_t state
     bool enabled = true
+
+    string _service_name
+end
+SystemdService.resources [0:] -- std::Resource
+
+
+entity SystemdPod extends SystemdService:
+    """
+    Systemd service that is composed of a pod, possiblty with multiple containers
+    attached to it.
+    """
 end
 SystemdPod.pod [1] -- podman::Pod
-SystemdPod.resources [0:] -- std::Resource
+
+
+entity SystemdContainer extends SystemdService:
+    """
+    Systemd service that is composed of a single container.
+    """
+end
+SystemdContainer.container [1] -- podman::Container

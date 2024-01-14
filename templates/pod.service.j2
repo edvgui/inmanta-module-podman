@@ -14,8 +14,8 @@ Environment=PODMAN_SYSTEMD_UNIT=%n
 Restart=on-failure
 TimeoutStopSec=70
 ExecStartPre=/usr/bin/podman pod create \
-        --infra-conmon-pidfile %t/pod-{{ pod.name }}.pid \
-        --pod-id-file %t/pod-{{ pod.name }}.pod-id \
+        --infra-conmon-pidfile=%t/pod-{{ pod.name }}.pid \
+        --pod-id-file=%t/pod-{{ pod.name }}.pod-id \
         --exit-policy=stop \
         --replace \
         {% for network in pod.networks -%}
