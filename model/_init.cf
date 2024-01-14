@@ -16,9 +16,10 @@
     Contact: edvgui@gmail.com
 """
 import std
-import podman::resources::container
-import podman::resources::network
-import podman::resources::pod
+import podman::container_like
+import podman::container
+import podman::network
+import podman::services
 
 
 entity ResourceABC extends std::PurgeableResource:
@@ -60,24 +61,45 @@ entity Network extends ResourceABC:
     bool ipv6_enabled = false
     dict labels = {}
 end
-Network.subnets [0:] -- podman::resources::network::Subnet.network [1]
+Network.subnets [0:] -- podman::network::Subnet.network [1]
+"""
+    The subnet in CIDR notation. Can be specified multiple times to allocate
+    more than one subnet for this network.
+"""
 
 
-entity Pod extends ResourceABC:
+entity ContainerLike extends ResourceABC:
     """
-    Run a pod.
-    
-    :attr hostname: Set a hostname to the pod.
-    :attr labels: Add metadata to a pod.
+    Abstraction gathering the properties that both containers and pods
+    can have.
+
+    :attr hostname: Set a hostname to the container.
+    :attr labels: Add metadata to a container.
     """
     string? hostname = null
     dict labels = {}
 end
-Pod.networks [0:] -- podman::resources::pod::Network.pod [1]
-Pod.publish [0:] -- podman::resources::pod::Publish.pod [1]
+ContainerLike.networks [0:] -- podman::container_like::Network.container_like [1]
+"""Set the network mode for the container."""
+
+ContainerLike.publish [0:] -- podman::container_like::Publish.container_like [1]
+"""Publish a container's port, or range of ports, to the host."""
+
+ContainerLike.gidmap [0:] -- podman::container_like::IdMap
+"""Map the group ids of the container to ids on the host"""
+
+ContainerLike.uidmap [0:] -- podman::container_like::IdMap
+"""Map the user ids of the container to ids on the host"""
 
 
-entity Container extends ResourceABC:
+entity Pod extends ContainerLike:
+    """
+    Run a pod.
+    """
+end
+
+
+entity Container extends ContainerLike:
     """
     Run a process in a new container. 
     
@@ -85,7 +107,6 @@ entity Container extends ResourceABC:
     and its own isolated process tree.
 
     :attr image: The image of the container
-    :attr name: The name of the container
     :attr env: Set environment variables.
     :attr env_file: Read the environment variables from the file.
     :attr entrypoint: Override the default ENTRYPOINT from the image.
@@ -97,8 +118,11 @@ entity Container extends ResourceABC:
     string? entrypoint = null
     string? command = null
 end
+Container.volumes [0:] -- podman::container::Volume.container [1]
+"""Create a bind mount."""
+
 Container.pod [0:1] -- Pod.containers [0:]
-Container.volumes [0:] -- podman::resources::container::Volume.container [1]
+"""Run container in an existing pod."""
 
 
 implementation require_agent_config for ResourceABC:
@@ -124,6 +148,7 @@ end
 
 implement ResourceABC using require_agent_config
 implement Network using parents
+implement ContainerLike using parents
 implement Pod using parents
 implement Container using parents
 implement Container using pod_consistency when self.pod is defined

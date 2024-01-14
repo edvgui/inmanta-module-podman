@@ -19,7 +19,12 @@ import std
 import exec
 
 
-SystemdPod._configuration_resources [0:] -- std::Resource
+implementation service_name for SystemdPod:
+    """
+    Setup the service name for the pod, using the pod name.
+    """
+    self._service_name = f"pod-{self.pod.name}.service"
+end
 
 
 implementation pod_configuration for SystemdPod:
@@ -29,40 +34,12 @@ implementation pod_configuration for SystemdPod:
     user = self.pod.owner
     host = self.pod.host
 
-    systemd_path = user == "root"
-        ? "/etc/systemd/system/"
-        : f"/home/{user}/.config/systemd/user/"
-
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo -E -u {user} -- systemctl --user"
-
-    # Make sure that the systemd directory exists
-    systemd_config_dir = std::Directory(
-        path=systemd_path,
-        mode=755,
-        owner=user,
-        group=user,
-        host=host,
-        requires=self.requires,
-        provides=self.provides,
-    )
-    self._configuration_resources += systemd_config_dir
-
-    # Run systemctl daemon-reload after any config file change
-    reload = exec::Run(
-        command=f"{systemctl_command} daemon-reload",
-        host=host,
-        send_event=true,
-    )
-    self._configuration_resources += reload
-
     # Set the variable that is required by the pod.service.j2 template
     pod = self.pod
 
     # Create the service file for the pod
     pod_service = std::File(
-        path=f"{systemd_path}pod-{pod.name}.service",
+        path=f"{self._systemd_config_dir.path}{self._service_name}",
         mode=644,
         owner=user,
         group=user,
@@ -74,14 +51,13 @@ implementation pod_configuration for SystemdPod:
         requires=self.requires,
         provides=self.provides,
     )
-    pod_service.requires += systemd_config_dir
-    pod_service.provides += reload
-    self._configuration_resources += pod_service
+    pod_service.requires += self._systemd_config_dir
+    self._file_resources += pod_service
 
     # Create the symlink to activate our pod service
     pod_activation = std::Symlink(
         source=pod_service.path,
-        target=f"{systemd_path}default.target.wants/pod-{pod.name}.service",
+        target=f"{self._systemd_config_dir.path}default.target.wants/{self._service_name}",
         send_event=true,
         reload=true,
         host=host,
@@ -89,9 +65,8 @@ implementation pod_configuration for SystemdPod:
         requires=self.requires,
         provides=self.provides,
     )
-    pod_activation.requires += systemd_config_dir
-    pod_activation.provides += reload
-    self._configuration_resources += pod_activation
+    pod_activation.requires += self._systemd_config_dir
+    self._file_resources += pod_activation
 
     if self.state == "removed":
         # When deleting the service, remove the symlink before the file
@@ -105,7 +80,7 @@ implementation pod_configuration for SystemdPod:
     for container in self.pod.containers:
          # Create the service file for the container
         container_service = std::File(
-            path=f"{systemd_path}container-{container.name}.service",
+            path=f"{self._systemd_config_dir.path}container-{container.name}.service",
             mode=644,
             owner=user,
             group=user,
@@ -117,14 +92,13 @@ implementation pod_configuration for SystemdPod:
             requires=self.requires,
             provides=self.provides,
         )
-        container_service.requires += systemd_config_dir
-        container_service.provides += reload
-        self._configuration_resources += container_service
+        container_service.requires += self._systemd_config_dir
+        self._file_resources += container_service
 
         # Create the symlink to activate our container service
         container_activation = std::Symlink(
             source=container_service.path,
-            target=f"{systemd_path}default.target.wants/container-{container.name}.service",
+            target=f"{self._systemd_config_dir.path}default.target.wants/container-{container.name}.service",
             send_event=true,
             reload=true,
             host=host,
@@ -132,9 +106,8 @@ implementation pod_configuration for SystemdPod:
             requires=self.requires,
             provides=self.provides,
         )
-        container_activation.requires += systemd_config_dir
-        container_activation.provides += reload
-        self._configuration_resources += container_activation
+        container_activation.requires += self._systemd_config_dir
+        self._file_resources += container_activation
 
         if self.state == "removed":
             # When deleting the service, remove the symlink before the file
@@ -144,69 +117,7 @@ implementation pod_configuration for SystemdPod:
             container_activation.requires += container_service
         end
     end
-
-    # All configuration resources are resources of the service
-    self.resources += self._configuration_resources
 end
 
 
-implementation run_service for SystemdPod:
-    """
-    Make sure that the service is running.
-    """
-    user = self.pod.owner
-    host = self.pod.host
-
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo -E -u {user} -- systemctl --user"
-
-    # If the service is not active, we start it
-    run_service = exec::Run(
-        command=f"{systemctl_command} start pod-{pod.name}.service",
-        unless=exec::in_shell(f"{systemctl_command} show pod-{pod.name}.service --property=ActiveState | grep ActiveState=active"),
-        host=host,
-        send_event=true,
-        requires=self.requires,
-        provides=self.provides,
-    )
-    run_service.requires += self._configuration_resources
-    self.resources += run_service
-end
-
-
-implementation stop_service for SystemdPod:
-    """
-    Make sure that the service is not running.
-    """
-    user = self.pod.owner
-    host = self.pod.host
-
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo -E -u {user} -- systemctl --user"
-
-    # If the service is active, we stop it
-    stop_service = exec::Run(
-        command=f"{systemctl_command} stop pod-{pod.name}.service",
-        onlyif=exec::in_shell(f"{systemctl_command} show pod-{pod.name}.service --property=ActiveState | grep ActiveState=active"),
-        host=host,
-        send_event=true,
-        requires=self.requires,
-        provides=self.provides,
-    )
-    self.resources += stop_service
-
-    if self.state == "removed":
-        # If the files will be removed, we should always stop the service first
-        stop_service.provides += self._configuration_resources
-    else:
-        # Otherwise, we expect the files to be there in order to stop the service properly
-        stop_service.requires += self._configuration_resources
-    end
-end
-
-
-implement SystemdPod using pod_configuration
-implement SystemdPod using run_service when self.state == "running"
-implement SystemdPod using stop_service when self.state != "running"
+implement SystemdPod using service_name, pod_configuration, parents

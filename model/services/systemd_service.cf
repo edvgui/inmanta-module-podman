@@ -1,0 +1,130 @@
+"""
+    Copyright 2023 Guillaume Everarts de Velp
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+    Contact: edvgui@gmail.com
+"""
+import std
+import exec
+
+
+SystemdService._file_resources [0:] -- std::Resource
+SystemdService._configuration_resources [0:] -- std::Resource
+SystemdService._systemd_config_dir [1] -- std::Directory
+
+
+implementation service_configuration for SystemdService:
+    """
+    Deploy and cleanup all the configuration files required by our service.
+    """
+    user = self.pod.owner
+    host = self.pod.host
+
+    systemd_path = user == "root"
+        ? "/etc/systemd/system/"
+        : f"/home/{user}/.config/systemd/user/"
+
+    systemctl_command = user == "root"
+        ? "systemctl"
+        : f"sudo -E -u {user} -- systemctl --user"
+
+    # Make sure that the systemd directory exists
+    self._systemd_config_dir = std::Directory(
+        path=systemd_path,
+        mode=755,
+        owner=user,
+        group=user,
+        host=host,
+        requires=self.requires,
+        provides=self.provides,
+    )
+    self._file_resources += self._systemd_config_dir
+
+    # Run systemctl daemon-reload after any config file change
+    reload = exec::Run(
+        command=f"{systemctl_command} daemon-reload",
+        host=host,
+        send_event=true,
+        requires=self._file_resources,  # We need to run this command every time the files have been changed
+    )
+    self._configuration_resources += reload
+
+    # All file resources are configuration resources
+    self._configuration_resources += self._file_resources
+
+    # All configuration resources are resources of the service
+    self.resources += self._configuration_resources
+end
+
+
+implementation run_service for SystemdService:
+    """
+    Make sure that the service is running.
+    """
+    user = self.pod.owner
+    host = self.pod.host
+
+    systemctl_command = user == "root"
+        ? "systemctl"
+        : f"sudo -E -u {user} -- systemctl --user"
+
+    # If the service is not active, we start it
+    run_service = exec::Run(
+        command=f"{systemctl_command} start {self._service_name}",
+        unless=exec::in_shell(f"{systemctl_command} show {self._service_name} --property=ActiveState | grep ActiveState=active"),
+        host=host,
+        send_event=true,
+        requires=self.requires,
+        provides=self.provides,
+    )
+    run_service.requires += self._configuration_resources
+    self.resources += run_service
+end
+
+
+implementation stop_service for SystemdService:
+    """
+    Make sure that the service is not running.
+    """
+    user = self.pod.owner
+    host = self.pod.host
+
+    systemctl_command = user == "root"
+        ? "systemctl"
+        : f"sudo -E -u {user} -- systemctl --user"
+
+    # If the service is active, we stop it
+    stop_service = exec::Run(
+        command=f"{systemctl_command} stop {self._service_name}",
+        onlyif=exec::in_shell(f"{systemctl_command} show {self._service_name} --property=ActiveState | grep ActiveState=active"),
+        host=host,
+        send_event=true,
+        requires=self.requires,
+        provides=self.provides,
+    )
+    self.resources += stop_service
+
+    if self.state == "removed":
+        # If the files will be removed, we should always stop the service first
+        stop_service.provides += self._configuration_resources
+    else:
+        # Otherwise, we expect the files to be there in order to stop the service properly
+        stop_service.requires += self._configuration_resources
+    end
+end
+
+
+implement SystemdService using service_configuration
+implement SystemdService using run_service when self.state == "running"
+implement SystemdService using stop_service when self.state != "running"
