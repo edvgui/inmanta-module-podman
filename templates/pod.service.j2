@@ -27,6 +27,12 @@ ExecStartPre=/usr/bin/podman pod create \
         {% if pod.hostname is not none -%}
         --hostname={{ pod.hostname }} \
         {% endif -%}
+        {% for uid_map in pod.uid_map -%}
+        --uidmap={{ uid_map.cli_option }} \
+        {% endfor -%}
+        {% for gid_map in pod.gid_map -%}
+        --gidmap={{ gid_map.cli_option }} \
+        {% endfor -%}
         --name={{ pod.name }}
 ExecStart=/usr/bin/podman pod start \
         --pod-id-file %t/pod-{{ pod.name }}.pod-id

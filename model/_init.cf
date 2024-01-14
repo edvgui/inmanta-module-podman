@@ -16,9 +16,9 @@
     Contact: edvgui@gmail.com
 """
 import std
-import podman::resources::container
-import podman::resources::network
-import podman::resources::pod
+import podman::container_like
+import podman::container
+import podman::network
 import podman::services
 
 
@@ -61,7 +61,7 @@ entity Network extends ResourceABC:
     bool ipv6_enabled = false
     dict labels = {}
 end
-Network.subnets [0:] -- podman::resources::network::Subnet.network [1]
+Network.subnets [0:] -- podman::network::Subnet.network [1]
 """
     The subnet in CIDR notation. Can be specified multiple times to allocate
     more than one subnet for this network.
@@ -79,11 +79,17 @@ entity ContainerLike extends ResourceABC:
     string? hostname = null
     dict labels = {}
 end
-Pod.networks [0:] -- podman::resources::pod::Network.pod [1]
+ContainerLike.networks [0:] -- podman::container_like::Network.container_like [1]
 """Set the network mode for the container."""
 
-Pod.publish [0:] -- podman::resources::pod::Publish.pod [1]
+ContainerLike.publish [0:] -- podman::container_like::Publish.container_like [1]
 """Publish a container's port, or range of ports, to the host."""
+
+ContainerLike.gidmap [0:] -- podman::container_like::IdMap
+"""Map the group ids of the container to ids on the host"""
+
+ContainerLike.uidmap [0:] -- podman::container_like::IdMap
+"""Map the user ids of the container to ids on the host"""
 
 
 entity Pod extends ContainerLike:
@@ -112,7 +118,7 @@ entity Container extends ContainerLike:
     string? entrypoint = null
     string? command = null
 end
-Container.volumes [0:] -- podman::resources::container::Volume.container [1]
+Container.volumes [0:] -- podman::container::Volume.container [1]
 """Create a bind mount."""
 
 Container.pod [0:1] -- Pod.containers [0:]

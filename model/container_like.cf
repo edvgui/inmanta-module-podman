@@ -20,9 +20,10 @@ import podman
 
 entity Network:
     """
-    Configure the networking for a pod.  Each implementation knows
+    Configure the networking for a container or pod.  Each implementation knows
     how to refine itself into the corresponding cli_option that can
-    be used to connect the pod to the network when the pod is created.
+    be used to connect the container or pod to the network when the container
+    or pod is created.
 
     :attr cli_option: The argument passed to the network cli option.
     """
@@ -35,7 +36,7 @@ entity BridgeNetwork extends Network:
 
     :attr name: The name of the network.  If the string is non-empty,
         it will refer to an already existing network.  If the string is
-        empty, a default network for the pod is created.
+        empty, a default network for the contianer or pod is created.
     :attr alias: Add network-scoped alias for the container.
     :attr ip: Specify a static ipv4/ipv4 address for this container.
     :attr mac: Specify a static mac address for this container.
@@ -52,7 +53,8 @@ end
 
 entity Publish:
     """
-    Publish a container's port, or range of ports, within this pod to the host.
+    Publish a container's port, or range of ports, within this container or 
+    pod to the host.
 
     Both hostPort and containerPort can be specified as a range of ports. When
     specifying ranges for both, the number of container ports in the range must
@@ -75,12 +77,31 @@ entity Publish:
     string cli_option
 end
 
-index Publish(pod, container_port)
+index Publish(container_like, container_port)
+
+
+entity IdMap:
+    """
+    This option provides a way to map host UIDs to container UIDs.
+    It can be passed several times to map different ranges.
+
+    The amount value is optional and assumed to be 1 if not given.
+
+    :attr container_id: The uid/gid inside of the container
+    :attr host_id: The uid/gid on the host
+    :attr amount: The amount specifies the number of consecutive UIDs that is mapped.
+    """
+    string container_id
+    string host_id
+    string? amount = null
+
+    string cli_option
+end
 
 
 implementation bridge_cli_option for BridgeNetwork:
     """
-    Compose the cli option required to connect the pod to a bridge.
+    Compose the cli option required to connect the container or pod to a bridge.
     """
     network_name = self.name == "" ? "bridge" : self.name
 
@@ -110,6 +131,18 @@ implementation publish_cli_option for Publish:
 end
 
 
+implementation id_map_cli_option for IdMap:
+    """
+    Compose the cli option required to map some container id to some ids
+    on the host.
+    """
+    mapping_start = f"{self.container_id}:{self.host_id}"
+
+    self.cli_option = self.amount is defined ? f"{mapping_start}:{self.amount}" : mapping_start
+end
+
+
 implement Network using std::none
 implement BridgeNetwork using bridge_cli_option
 implement Publish using publish_cli_option
+implement IdMap using id_map_cli_option

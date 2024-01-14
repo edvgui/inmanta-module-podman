@@ -31,6 +31,12 @@ ExecStart=/usr/bin/podman run \
         {% if container.hostname is not none -%}
         --hostname={{ container.hostname }} \
         {% endif -%}
+        {% for uid_map in container.uid_map -%}
+        --uidmap={{ uid_map.cli_option }} \
+        {% endfor -%}
+        {% for gid_map in container.gid_map -%}
+        --gidmap={{ gid_map.cli_option }} \
+        {% endfor -%}
         --name={{ container.name }} \
         {% for volume in container.volumes -%}
         --volume={{ volume.cli_option }} \

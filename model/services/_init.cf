@@ -16,7 +16,6 @@
     Contact: edvgui@gmail.com
 """
 import podman
-import podman::resources
 import podman::services::systemd_container
 import podman::services::systemd_pod
 import podman::services::systemd_service
