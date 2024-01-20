@@ -47,6 +47,7 @@ entity SystemdService:
 
     string _service_name
 end
+SystemdService._container_like [1] -- podman::ContainerLike
 SystemdService.resources [0:] -- std::Resource
 
 

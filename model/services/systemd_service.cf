@@ -28,8 +28,8 @@ implementation service_configuration for SystemdService:
     """
     Deploy and cleanup all the configuration files required by our service.
     """
-    user = self.pod.owner
-    host = self.pod.host
+    user = self._container_like.owner
+    host = self._container_like.host
 
     systemd_path = user == "root"
         ? "/etc/systemd/system/"
@@ -72,8 +72,8 @@ implementation run_service for SystemdService:
     """
     Make sure that the service is running.
     """
-    user = self.pod.owner
-    host = self.pod.host
+    user = self._container_like.owner
+    host = self._container_like.host
 
     systemctl_command = user == "root"
         ? "systemctl"
@@ -97,8 +97,8 @@ implementation stop_service for SystemdService:
     """
     Make sure that the service is not running.
     """
-    user = self.pod.owner
-    host = self.pod.host
+    user = self._container_like.owner
+    host = self._container_like.host
 
     systemctl_command = user == "root"
         ? "systemctl"

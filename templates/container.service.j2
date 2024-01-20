@@ -4,7 +4,7 @@ Documentation=https://github.com/edvgui/inmanta-module-podman
 Wants=network-online.target
 After=network-online.target
 RequiresMountsFor=%t/containers
-{%- if container.pod is not none %}
+{%- if container.pod is defined %}
 BindsTo=pod-{{ container.pod.name }}.service
 After=pod-{{ container.pod.name }}.service
 {%- endif %}
@@ -16,7 +16,7 @@ TimeoutStopSec=70
 ExecStart=/usr/bin/podman run \
         --cidfile=%t/%n.ctr-id \
         --cgroups=no-conmon \
-        {% if container.pod is not none -%}
+        {% if container.pod is defined -%}
         --pod-id-file=%t/pod-{{ container.pod.name }}.pod-id \
         {% endif -%}
         --sdnotify=conmon \
@@ -31,10 +31,10 @@ ExecStart=/usr/bin/podman run \
         {% if container.hostname is not none -%}
         --hostname={{ container.hostname }} \
         {% endif -%}
-        {% for uid_map in container.uid_map -%}
+        {% for uid_map in container.uidmap -%}
         --uidmap={{ uid_map.cli_option }} \
         {% endfor -%}
-        {% for gid_map in container.gid_map -%}
+        {% for gid_map in container.gidmap -%}
         --gidmap={{ gid_map.cli_option }} \
         {% endfor -%}
         --name={{ container.name }} \
@@ -49,6 +49,9 @@ ExecStart=/usr/bin/podman run \
         {% endif -%}
         {% if container.entrypoint is not none -%}
         --entrypoint={{ container.entrypoint }} \
+        {% endif -%}
+        {% if container.user is not none -%}
+        --user={{ container.user }} \
         {% endif -%}
         {{ container.image }} {% if container.command is not none %}{{ container.command }}{% endif %}
 ExecStop=/usr/bin/podman stop \

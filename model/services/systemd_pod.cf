@@ -19,6 +19,14 @@ import std
 import exec
 
 
+implementation container_like for SystemdPod:
+    """
+    Setup the container like relation as the pod attached to this service.
+    """
+    self._container_like = self.pod
+end
+
+
 implementation service_name for SystemdPod:
     """
     Setup the service name for the pod, using the pod name.
@@ -56,7 +64,7 @@ implementation pod_configuration for SystemdPod:
 
     # Create the symlink to activate our pod service
     pod_activation = std::Symlink(
-        source=pod_service.path,
+        source=f"../{self._service_name}",
         target=f"{self._systemd_config_dir.path}default.target.wants/{self._service_name}",
         send_event=true,
         reload=true,
@@ -97,7 +105,7 @@ implementation pod_configuration for SystemdPod:
 
         # Create the symlink to activate our container service
         container_activation = std::Symlink(
-            source=container_service.path,
+            source=f"../container-{container.name}.service",
             target=f"{self._systemd_config_dir.path}default.target.wants/container-{container.name}.service",
             send_event=true,
             reload=true,
@@ -120,4 +128,4 @@ implementation pod_configuration for SystemdPod:
 end
 
 
-implement SystemdPod using service_name, pod_configuration, parents
+implement SystemdPod using container_like, service_name, pod_configuration, parents
