@@ -46,8 +46,8 @@ implementation service_configuration for SystemdService:
         owner=user,
         group=user,
         host=host,
-        requires=self.requires,
-        provides=self.provides,
+        # requires=self.requires,  # We don't need this directory to be created after our requires
+        provides=self.provides,  # But we need to make sure it is created before our provides
     )
     self._file_resources += self._systemd_config_dir
 
@@ -56,7 +56,11 @@ implementation service_configuration for SystemdService:
         command=f"{systemctl_command} daemon-reload",
         host=host,
         send_event=true,
-        requires=self._file_resources,  # We need to run this command every time the files have been changed
+        requires=[
+            self.requires,  # We don't want to run this command before any of our requires
+            self._file_resources,  # We need to run this command every time the files have been changed
+        ],
+        # provides=self.provides,  # We don't need to run this command before any of our provides
     )
     self._configuration_resources += reload
 
