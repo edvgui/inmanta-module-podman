@@ -1,12 +1,12 @@
 [Unit]
-Description=Podman {{ pod._service_name }}
+Description=Podman {{ pod.service_name }}
 Documentation=https://github.com/edvgui/inmanta-module-podman
 Wants=network-online.target
 After=network-online.target
 RequiresMountsFor=/run/user/%U/containers
 {%- for container in pod.containers %}
-Wants={{ container._service_name }}
-Before={{ container._service_name }}
+Wants={{ container.service_name }}
+Before={{ container.service_name }}
 {%- endfor %}
 
 [Service]

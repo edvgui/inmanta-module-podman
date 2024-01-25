@@ -39,13 +39,13 @@ entity SystemdService:
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
 
-    :attr _service_name: Attribute used internally to save the name of the top-level
+    :attr service_name: Attribute used internally to save the name of the top-level
         service to manage.
     """
     service_state_t state
     bool enabled = true
 
-    string _service_name
+    string service_name
 end
 SystemdService._container_like [1] -- podman::ContainerLike
 SystemdService.resources [0:] -- std::Resource
