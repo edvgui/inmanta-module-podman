@@ -20,6 +20,7 @@ import podman::container_like
 import podman::container
 import podman::network
 import podman::services
+import podman::helpers
 
 
 entity ResourceABC extends std::PurgeableResource:
