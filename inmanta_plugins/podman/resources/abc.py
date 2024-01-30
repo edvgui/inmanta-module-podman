@@ -28,6 +28,8 @@ class ResourceABC(inmanta.resources.PurgeableResource):
         "owner",
         "name",
     )
+    owner: str
+    name: str
 
     @classmethod
     def get_q(
@@ -36,13 +38,16 @@ class ResourceABC(inmanta.resources.PurgeableResource):
         entity: inmanta.execute.proxy.DynamicProxy,
     ) -> str:
         return f"owner={entity.owner}&name={entity.name}"
+    
+
+ABC = typing.TypeVar("ABC", bound=ResourceABC)
 
 
-class HandlerABC(inmanta.agent.handler.CRUDHandler):
+class HandlerABC(inmanta.agent.handler.CRUDHandlerGeneric[ABC]):
     def run_command(
         self,
         ctx: inmanta.agent.handler.HandlerContext,
-        resource: inmanta.resources.Resource,
+        resource: ABC,
         *,
         command: list[str],
         timeout: int,
