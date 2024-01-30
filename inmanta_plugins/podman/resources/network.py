@@ -71,6 +71,7 @@ def merge(
 )
 class NetworkResource(inmanta_plugins.podman.resources.abc.ResourceABC):
     fields = ("config",)
+    config: dict
 
     @classmethod
     def get_config(
@@ -143,12 +144,12 @@ def build_create_command(config: dict) -> list[str]:
 
 
 @inmanta.agent.handler.provider("podman::Network", "")
-class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
+class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC[NetworkResource]):
     def calculate_diff(
         self,
         ctx: inmanta.agent.handler.HandlerContext,
-        current: inmanta.resources.Resource,
-        desired: inmanta.resources.Resource,
+        current: NetworkResource,
+        desired: NetworkResource,
     ) -> dict[str, dict[str, object]]:
         diff = super().calculate_diff(ctx, current, desired)
         if "config" not in diff:
@@ -173,7 +174,7 @@ class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
     def read_resource(
         self,
         ctx: inmanta.agent.handler.HandlerContext,
-        resource: inmanta.resources.PurgeableResource,
+        resource: NetworkResource,
     ) -> None:
         # Run the inspect command on the remote host
         command = ["podman", "network", "inspect", resource.name]
@@ -204,7 +205,7 @@ class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
     def create_resource(
         self,
         ctx: inmanta.agent.handler.HandlerContext,
-        resource: inmanta.resources.PurgeableResource,
+        resource: NetworkResource,
     ) -> None:
         # Run the create command on the remote host
         command = build_create_command(resource.config)
@@ -230,7 +231,7 @@ class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
         self,
         ctx: inmanta.agent.handler.HandlerContext,
         changes: dict[str, dict[str, object]],
-        resource: inmanta.resources.PurgeableResource,
+        resource: NetworkResource,
     ) -> None:
         # We can't update the network, se we first delete it, then re-create it
         self.delete_resource(ctx, resource)
@@ -249,7 +250,7 @@ class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC):
     def delete_resource(
         self,
         ctx: inmanta.agent.handler.HandlerContext,
-        resource: inmanta.resources.PurgeableResource,
+        resource: NetworkResource,
     ) -> None:
         # Run the create command on the remote host
         command = ["podman", "network", "remove", resource.name]
