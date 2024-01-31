@@ -15,6 +15,7 @@
 
     Contact: edvgui@gmail.com
 """
+
 from pytest_inmanta.plugin import Project
 
 
