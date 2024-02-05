@@ -134,7 +134,6 @@ entity Image extends ResourceABC:
     """
     Make sure a container image is present (or not) on a given host.
     """
-    string name
 end
 
 index Image(host, name)
