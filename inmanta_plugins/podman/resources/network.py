@@ -15,6 +15,7 @@
 
     Contact: edvgui@gmail.com
 """
+
 import json
 import typing
 

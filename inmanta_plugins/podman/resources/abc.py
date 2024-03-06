@@ -15,6 +15,7 @@
 
     Contact: edvgui@gmail.com
 """
+
 import typing
 
 import inmanta.agent.handler

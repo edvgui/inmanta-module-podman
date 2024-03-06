@@ -1,2 +1,2 @@
 inmanta-module-exec==1.1.20
-inmanta-module-std==5.1.0
+inmanta-module-std==5.2.0
