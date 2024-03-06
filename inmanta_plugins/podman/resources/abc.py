@@ -38,7 +38,7 @@ class ResourceABC(inmanta.resources.PurgeableResource):
         entity: inmanta.execute.proxy.DynamicProxy,
     ) -> str:
         return f"owner={entity.owner}&name={entity.name}"
-    
+
 
 ABC = typing.TypeVar("ABC", bound=ResourceABC)
 

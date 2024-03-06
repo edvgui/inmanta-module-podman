@@ -96,7 +96,10 @@ class ImageHandler(inmanta_plugins.podman.resources.abc.HandlerABC[IR]):
     agent="host.name",
 )
 class ImageFromSourceResource(ImageResource):
-    fields = ("options", "context",)
+    fields = (
+        "options",
+        "context",
+    )
     options: list[str]
     context: typing.Optional[str]
 
