@@ -15,6 +15,7 @@
 
     Contact: edvgui@gmail.com
 """
+
 import json
 import typing
 
@@ -69,8 +70,8 @@ class ImageHandler(inmanta_plugins.podman.resources.abc.HandlerABC[IR]):
         ctx: inmanta.agent.handler.HandlerContext,
         resource: IR,
     ) -> None:
-        # Run the create command on the remote host
-        command = ["podman", "image", "remove", resource.name]
+        # Run the remove command on the remote host
+        command = ["podman", "image", "rm", resource.name]
         _, stderr, ret = self.run_command(
             ctx,
             resource,
@@ -119,6 +120,8 @@ class ImageFromSourceResource(ImageResource):
             options.append("--squash-all")
         if entity.pull:
             options.append(f"--pull={entity.pull}")
+        if entity.file:
+            options.append(f"--file={entity.file}")
         return options
 
 
@@ -247,7 +250,7 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
                 exit_code=ret,
                 stderr=stderr,
             )
-            raise RuntimeError("Failed to build image")
+            raise RuntimeError("Failed to pull image")
 
     def create_resource(
         self,

@@ -154,6 +154,7 @@ entity ImageFromSource extends Image:
     bool? squash_all = null
     string? pull = null
     string? context = null
+    string? file = null
 end
 
 
@@ -193,3 +194,6 @@ implement ContainerLike using parents
 implement Pod using parents
 implement Container using parents
 implement Container using pod_consistency when self.pod is defined
+implement Image using parents
+implement ImageFromRegistry using parents
+implement ImageFromSource using parents
