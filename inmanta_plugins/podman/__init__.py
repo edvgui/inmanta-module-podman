@@ -22,8 +22,13 @@ import inmanta.plugins
 
 
 @inmanta.plugins.plugin()
-def add(a: "int", *b: "int") -> "int":
-    return sum(b, a)
+def plus(a: "int", b: "int") -> "int":
+    return a + b
+
+
+@inmanta.plugins.plugin()
+def minus(a: "int", b: "int") -> "int":
+    return a - b
 
 
 @inmanta.plugins.plugin()
