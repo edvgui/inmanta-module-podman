@@ -40,7 +40,6 @@ def test_model(project: Project, purged: bool = False) -> None:
         podman::Network(
             host=host,
             name="test-net",
-            owner=user,
             subnets=[Subnet(subnet="172.45.0.0/24")],
             purged={json.dumps(purged)},
         )
