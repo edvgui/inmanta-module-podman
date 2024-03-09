@@ -13,9 +13,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Install python
+        run: |
+          yum install -y python3.11 python3.11-devel
       - name: Install dependencies
         run: |
-          python3 -m venv venv
+          python3.11 -m venv venv
           venv/bin/pip install -U pip -r requirements.dev.txt -e . -c requirements.txt
           venv/bin/pip list | grep inmanta
       - name: Lint with flake8
