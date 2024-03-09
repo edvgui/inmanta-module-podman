@@ -46,8 +46,8 @@ implementation service_configuration for SystemdService:
         owner=user,
         group=user,
         host=host,
-        requires=self.requires,
-        provides=self.provides,
+        # requires=self.requires,  # We don't need this directory to be created after our requires
+        provides=self.provides,  # But we need to make sure it is created before our provides
     )
     self._file_resources += self._systemd_config_dir
 
@@ -56,7 +56,11 @@ implementation service_configuration for SystemdService:
         command=f"{systemctl_command} daemon-reload",
         host=host,
         send_event=true,
-        requires=self._file_resources,  # We need to run this command every time the files have been changed
+        requires=[
+            self.requires,  # We don't want to run this command before any of our requires
+            self._file_resources,  # We need to run this command every time the files have been changed
+        ],
+        # provides=self.provides,  # We don't need to run this command before any of our provides
     )
     self._configuration_resources += reload
 
@@ -81,8 +85,8 @@ implementation run_service for SystemdService:
 
     # If the service is not active, we start it
     run_service = exec::Run(
-        command=f"{systemctl_command} start {self._service_name}",
-        unless=exec::in_shell(f"{systemctl_command} show {self._service_name} --property=ActiveState | grep ActiveState=active"),
+        command=f"{systemctl_command} start {self.service_name}",
+        unless=exec::in_shell(f"{systemctl_command} show {self.service_name} --property=ActiveState | grep ActiveState=active"),
         host=host,
         send_event=true,
         requires=self.requires,
@@ -106,8 +110,8 @@ implementation stop_service for SystemdService:
 
     # If the service is active, we stop it
     stop_service = exec::Run(
-        command=f"{systemctl_command} stop {self._service_name}",
-        onlyif=exec::in_shell(f"{systemctl_command} show {self._service_name} --property=ActiveState | grep ActiveState=active"),
+        command=f"{systemctl_command} stop {self.service_name}",
+        onlyif=exec::in_shell(f"{systemctl_command} show {self.service_name} --property=ActiveState | grep ActiveState=active"),
         host=host,
         send_event=true,
         requires=self.requires,

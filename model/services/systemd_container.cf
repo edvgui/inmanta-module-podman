@@ -31,7 +31,7 @@ implementation service_name for SystemdContainer:
     """
     Setup the service name for the container, using the container name.
     """
-    self._service_name = f"container-{self.container.name}.service"
+    self.service_name = f"container-{self.container.name}.service"
 end
 
 
@@ -50,7 +50,7 @@ implementation container_configuration for SystemdContainer:
 
     # Create the service file for the pod
     container_service = std::File(
-        path=f"{self._systemd_config_dir.path}{self._service_name}",
+        path=f"{self._systemd_config_dir.path}{self.service_name}",
         mode=644,
         owner=user,
         group=user,
@@ -67,8 +67,8 @@ implementation container_configuration for SystemdContainer:
 
     # Create the symlink to activate our pod service
     container_activation = std::Symlink(
-        source=f"../{self._service_name}",
-        target=f"{self._systemd_config_dir.path}default.target.wants/{self._service_name}",
+        source=f"../{self.service_name}",
+        target=f"{self._systemd_config_dir.path}default.target.wants/{self.service_name}",
         send_event=true,
         reload=true,
         host=host,

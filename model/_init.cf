@@ -20,9 +20,10 @@ import podman::container_like
 import podman::container
 import podman::network
 import podman::services
+import podman::helpers
 
 
-entity ResourceABC extends std::PurgeableResource:
+entity ResourceABC extends std::PurgeableResource, std::ManagedResource:
     """
     Base resource for all podman resources.
 
@@ -129,6 +130,43 @@ Container.pod [0:1] -- Pod.containers [0:]
 """Run container in an existing pod."""
 
 
+entity Image extends ResourceABC:
+    """
+    Make sure a container image is present (or not) on a given host.
+    """
+end
+
+index Image(host, name)
+
+
+entity ImageFromSource extends Image:
+    """
+    Build a container image using a Containerfile
+
+    Builds an image using instructions from one or more Containerfiles or Dockerfiles and a specified build context directory.
+
+    :attr squash: Squash all of the image's new layers into a single new layer; any preexisting layers are not squashed.
+    :attr squash_all: Squash all of the new image's layers (including those inherited from a base image) into a single new layer.
+    :attr pull: Pull image policy. (always, true, missing, never, false, newer)
+    :attr context: The build context directory can be specified as the http(s) URL of an archive, git repository or Containerfile.
+    """
+    bool? squash = null
+    bool? squash_all = null
+    string? pull = null
+    string? context = null
+    string? file = null
+end
+
+
+entity ImageFromRegistry extends Image:
+    """
+    Pull an image from a registry
+    """
+    string? transport = null
+    string? digest = null
+end
+
+
 implementation require_agent_config for ResourceABC:
     """
     Resources in this module expect the agent name to match the host name.
@@ -156,3 +194,6 @@ implement ContainerLike using parents
 implement Pod using parents
 implement Container using parents
 implement Container using pod_consistency when self.pod is defined
+implement Image using parents
+implement ImageFromRegistry using parents
+implement ImageFromSource using parents

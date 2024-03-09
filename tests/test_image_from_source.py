@@ -20,6 +20,8 @@ import json
 
 from pytest_inmanta.plugin import Project
 
+import inmanta.const
+
 
 def test_model(project: Project, purged: bool = False) -> None:
     model = f"""
@@ -35,10 +37,11 @@ def test_model(project: Project, purged: bool = False) -> None:
             os=std::linux,
         )
 
-        podman::Network(
+        podman::ImageFromSource(
             host=host,
-            name="test-net",
-            subnets=[Subnet(subnet="172.45.0.0/24")],
+            name="docker.io/library/alpine:latest",
+            context="https://github.com/alpinelinux/docker-alpine.git",
+            file="Dockerfile",
             purged={json.dumps(purged)},
         )
     """
@@ -47,13 +50,18 @@ def test_model(project: Project, purged: bool = False) -> None:
 
 
 def test_deploy(project: Project) -> None:
-    # Make sure the network is there
+    # Build the alpine image
     test_model(project, purged=False)
-    project.deploy_resource("podman::Network")
-    assert not project.dryrun_resource("podman::Network")
+    project.deploy_resource("podman::ImageFromSource")
 
-    # Make sure the network is gone
+    # We can't make a dryrun, but we can assert that rebuilding the
+    # image didn't bring any change
+    project.deploy_resource(
+        "podman::ImageFromSource", change=inmanta.const.Change.nochange
+    )
+
+    # Make sure the image is gone
     test_model(project, purged=True)
-    assert project.dryrun_resource("podman::Network")
-    project.deploy_resource("podman::Network")
-    assert not project.dryrun_resource("podman::Network")
+    assert project.dryrun_resource("podman::ImageFromSource")
+    project.deploy_resource("podman::ImageFromSource")
+    assert not project.dryrun_resource("podman::ImageFromSource")

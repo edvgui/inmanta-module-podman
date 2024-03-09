@@ -31,7 +31,7 @@ implementation service_name for SystemdPod:
     """
     Setup the service name for the pod, using the pod name.
     """
-    self._service_name = f"pod-{self.pod.name}.service"
+    self.service_name = f"pod-{self.pod.name}.service"
 end
 
 
@@ -47,7 +47,7 @@ implementation pod_configuration for SystemdPod:
 
     # Create the service file for the pod
     pod_service = std::File(
-        path=f"{self._systemd_config_dir.path}{self._service_name}",
+        path=f"{self._systemd_config_dir.path}{self.service_name}",
         mode=644,
         owner=user,
         group=user,
@@ -64,8 +64,8 @@ implementation pod_configuration for SystemdPod:
 
     # Create the symlink to activate our pod service
     pod_activation = std::Symlink(
-        source=f"../{self._service_name}",
-        target=f"{self._systemd_config_dir.path}default.target.wants/{self._service_name}",
+        source=f"../{self.service_name}",
+        target=f"{self._systemd_config_dir.path}default.target.wants/{self.service_name}",
         send_event=true,
         reload=true,
         host=host,
