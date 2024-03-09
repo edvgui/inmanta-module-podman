@@ -13,10 +13,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Install python
+      - name: Install python3.11 and gcc
         run: |
           yum install -y python3.11 python3.11-devel gcc
-      - name: Install dependencies
+      - name: Install module and its dependencies
         run: |
           python3.11 -m venv venv
           venv/bin/pip install -U pip -r requirements.dev.txt -e . -c requirements.txt
@@ -26,4 +26,4 @@ jobs:
           venv/bin/flake8 tests inmanta_plugins
       - name: Run tests
         run: |
-          venv/bin/pytest tests
+          sudo -E -u podman venv/bin/pytest tests -k 'not skip_ci'

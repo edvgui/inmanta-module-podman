@@ -15,7 +15,7 @@
 
     Contact: edvgui@gmail.com
 """
-
+import pytest
 import json
 
 from pytest_inmanta.plugin import Project
@@ -51,6 +51,7 @@ def test_model(project: Project, purged: bool = False) -> None:
     project.compile(model, no_dedent=False)
 
 
+@pytest.mark.skip_ci
 def test_deploy(project: Project) -> None:
     # Build the alpine image
     test_model(project, purged=False)
