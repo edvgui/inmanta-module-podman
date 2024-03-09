@@ -27,12 +27,10 @@ def test_model(project: Project, purged: bool = False) -> None:
         import podman::network
         import std
 
-        user = std::get_env("USER")
 
         host = std::Host(
             name="localhost",
             remote_agent=true,
-            remote_user=user,
             ip="127.0.0.1",
             os=std::linux,
         )
