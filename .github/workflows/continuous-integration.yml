@@ -6,6 +6,26 @@ on:
     - cron:  '0 5 * * *'
 
 jobs:
+  linting:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+          architecture: 'x64'
+      - name: Install module and its dependencies
+        run: |
+          python3.11 -m venv venv
+          venv/bin/pip install -U pip -r requirements.dev.txt -e . -c requirements.txt
+          venv/bin/pip list | grep inmanta
+      - name: Lint with flake8
+        run: |
+          venv/bin/flake8 tests inmanta_plugins
+
   tests:
 
     runs-on: ubuntu-latest
@@ -21,9 +41,6 @@ jobs:
           python3.11 -m venv venv
           venv/bin/pip install -U pip -r requirements.dev.txt -e . -c requirements.txt
           venv/bin/pip list | grep inmanta
-      - name: Lint with flake8
-        run: |
-          venv/bin/flake8 tests inmanta_plugins
       - name: Run tests
         run: |
           sudo -E -u podman venv/bin/pytest tests -k 'not skip_ci'
