@@ -58,8 +58,8 @@ implementation create_mappings for FullyMappedHostUser:
         # Map the host subids to the container ids after the desired
         # container id
         self.id_maps += podman::container_like::IdMap(
-            container_id=string(self.container_id + 1),
-            host_id=string(self.container_id + 1),
+            container_id=string(podman::add(self.container_id, 1)),
+            host_id=string(podman::add(self.container_id, 1)),
             amount=string(self.container_id_max - self.container_id),
         )
     end

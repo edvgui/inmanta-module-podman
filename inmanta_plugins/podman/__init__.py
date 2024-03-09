@@ -22,6 +22,11 @@ import inmanta.plugins
 
 
 @inmanta.plugins.plugin()
+def add(a: "int", *b: "int") -> "int":
+    return sum(b, a)
+
+
+@inmanta.plugins.plugin()
 def inline_options(options: "dict") -> "string":  # type: ignore
     """
     Convert a dict of options into a comma-separated list of key=value pairs.
