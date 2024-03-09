@@ -16,11 +16,13 @@
     Contact: edvgui@gmail.com
 """
 
+import json
+
 from pytest_inmanta.plugin import Project
 
 
-def test_model(project: Project) -> None:
-    model = """
+def test_model(project: Project, purged: bool = False) -> None:
+    model = f"""
         import podman
         import podman::network
         import std
@@ -39,9 +41,22 @@ def test_model(project: Project) -> None:
             host=host,
             name="test-net",
             owner=user,
-            subnets=[Subnet(subnet="172.42.0.0/24")],
-            purged=false,
+            subnets=[Subnet(subnet="172.45.0.0/24")],
+            purged={json.dumps(purged)},
         )
     """
 
     project.compile(model, no_dedent=False)
+
+
+def test_deploy(project: Project) -> None:
+    # Make sure the network is there
+    test_model(project, purged=False)
+    project.deploy_resource("podman::Network")
+    assert not project.dryrun_resource("podman::Network")
+
+    # Make sure the network is gone
+    test_model(project, purged=True)
+    assert project.dryrun_resource("podman::Network")
+    project.deploy_resource("podman::Network")
+    assert not project.dryrun_resource("podman::Network")
