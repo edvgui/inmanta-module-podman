@@ -18,7 +18,6 @@
 
 import json
 
-import pytest
 from pytest_inmanta.plugin import Project
 
 import inmanta.const

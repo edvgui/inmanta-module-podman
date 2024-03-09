@@ -25,6 +25,7 @@ jobs:
       - name: Lint with flake8
         run: |
           venv/bin/flake8 tests inmanta_plugins
+          venv/bin/pyupgrade --py39-plus $(find inmanta_plugins tests -type f -name '*.py')
 
   tests:
 
