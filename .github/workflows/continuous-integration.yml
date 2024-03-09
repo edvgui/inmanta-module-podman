@@ -45,4 +45,4 @@ jobs:
           venv/bin/pip list | grep inmanta
       - name: Run tests
         run: |
-          podman venv/bin/pytest tests
+          venv/bin/pytest tests
