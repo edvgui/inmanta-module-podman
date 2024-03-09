@@ -23,11 +23,17 @@ import inmanta.plugins
 
 @inmanta.plugins.plugin()
 def plus(a: "int", b: "int") -> "int":
+    """
+    Will be replaced by https://github.com/inmanta/inmanta-core/issues/1799
+    """
     return a + b
 
 
 @inmanta.plugins.plugin()
 def minus(a: "int", b: "int") -> "int":
+    """
+    Will be replaced by https://github.com/inmanta/inmanta-core/issues/1799
+    """
     return a - b
 
 
