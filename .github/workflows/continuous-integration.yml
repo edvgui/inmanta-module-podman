@@ -30,6 +30,7 @@ jobs:
 
     runs-on: ubuntu-latest
     container: quay.io/podman/stable:latest
+    options: --privileged
 
     steps:
       - uses: actions/checkout@v3
@@ -43,4 +44,4 @@ jobs:
           venv/bin/pip list | grep inmanta
       - name: Run tests
         run: |
-          sudo -E -u podman venv/bin/pytest tests -k 'not skip_ci'
+          podman venv/bin/pytest tests
