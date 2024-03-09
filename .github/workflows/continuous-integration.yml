@@ -9,9 +9,7 @@ jobs:
   tests:
 
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.11"]
+    container: quay.io/podman/stable:latest
 
     steps:
       - uses: actions/checkout@v3
