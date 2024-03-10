@@ -19,6 +19,7 @@ import podman
 import podman::services::systemd_container
 import podman::services::systemd_pod
 import podman::services::systemd_service
+import files
 
 
 typedef service_state_t as string matching self in ["stopped", "running", "removed"]
@@ -42,13 +43,16 @@ entity SystemdService:
     :attr service_name: Attribute used internally to save the name of the top-level
         service to manage.
     """
+    string? name = null
+    string? description = null
     service_state_t state
     bool enabled = true
 
     string service_name
 end
-SystemdService._container_like [1] -- podman::ContainerLike
+SystemdService._container_like [1] -- podman::ContainerLike._systemd_service [0:1]
 SystemdService.resources [0:] -- std::Resource
+SystemdService.unit [1] -- files::SystemdUnitFile
 
 
 entity SystemdPod extends SystemdService:

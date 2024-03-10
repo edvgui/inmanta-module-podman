@@ -17,6 +17,9 @@
 """
 import std
 import exec
+import podman
+import files
+import files::systemd_unit
 
 
 implementation container_like for SystemdContainer:
@@ -31,62 +34,89 @@ implementation service_name for SystemdContainer:
     """
     Setup the service name for the container, using the container name.
     """
-    self.service_name = f"container-{self.container.name}.service"
+    self.service_name = self.name is defined ? self.name : f"container-{self.container.name}.service"
 end
 
 
-implementation container_configuration for SystemdContainer:
+implementation unit_file for SystemdContainer:
     """
     Deploy and cleanup all the configuration files required by our service.
     """
     user = self.container.owner
     host = self.container.host
 
-    # The pod can never be set if we use the container as a standalone service
-    self.container.pod = null
+    pod = self.container.pod is defined
+        ? self.container.pod
+        : null
+
+    pod_service = pod is defined and pod._systemd_service is defined
+        ? pod._systemd_service
+        : null
 
     # Set the variable that is required by the container.service.j2 template
     container = self.container
 
-    # Create the service file for the pod
-    container_service = std::File(
+    # Create the service unit for the pod
+    self.unit = files::SystemdUnitFile(
         path=f"{self._systemd_config_dir.path}{self.service_name}",
-        mode=644,
+        permissions=644,
         owner=user,
         group=user,
-        content=std::template("podman/container.service.j2"),
-        send_event=true,
-        reload=true,
         host=host,
+        unit=Unit(
+            description=self.description is defined ? self.description : f"Podman {self.service_name}",
+            documentation=["https://github.com/edvgui/inmanta-module-podman"],
+            wants=["network-online.target"],
+            requires_mounts_for=["%t/containers"],
+            binds_to=pod_service is defined
+                ? [pod_service.service_name]
+                : [],
+            after=pod_service is defined
+                ? [pod_service.service_name, "network-online.service"]
+                : ["network-online.service"],
+        ),
+        service=Service(
+            environment={"PODMAN_SYSTEMD_UNIT": "%n"},
+            restart="on-failure",
+            timeout_stop_sec=70,
+            exec_start=podman::container_run(
+                self.container,
+                cidfile="%t/%n.ctr-id",
+                cgroups="no-conmon",
+                pod_id_file=pod_service is defined
+                    ? "%t/pod-{{ container.pod.name }}.pod-id"
+                    : null,
+                sdnotify="conmon",
+                detach=true,
+                replace=true,
+            ),
+            exec_stop=podman::container_stop(
+                self.container,
+                ignore=true,
+                cidfile="%t/%n.ctr-id",
+                time=10,
+            ),
+            exec_stop_post=podman::container_rm(
+                self.container,
+                force=true,
+                ignore=true,
+                time=10,
+                cidfile="%t/%n.ctr-id",
+            ),
+            type="notify",
+            notify_access="all",
+        ),
+        install=Install(
+            wanted_by=["default.target"],
+        ),
+        send_event=true,
         purged=self.state == "removed",
         requires=self.requires,
         provides=self.provides,
     )
-    container_service.requires += self._systemd_config_dir
-    self._file_resources += container_service
-
-    # Create the symlink to activate our pod service
-    container_activation = std::Symlink(
-        source=f"../{self.service_name}",
-        target=f"{self._systemd_config_dir.path}default.target.wants/{self.service_name}",
-        send_event=true,
-        reload=true,
-        host=host,
-        purged=self.state == "removed" or not self.enabled,
-        requires=self.requires,
-        provides=self.provides,
-    )
-    container_activation.requires += self._systemd_config_dir
-    self._file_resources += container_activation
-
-    if self.state == "removed":
-        # When deleting the service, remove the symlink before the file
-        container_service.requires += container_activation
-    else:
-        # Otherwise do the opposite
-        container_activation.requires += container_service
-    end
+    self.unit.requires += self._systemd_config_dir
+    self._file_resources += self.unit
 end
 
 
-implement SystemdContainer using container_like, service_name, container_configuration, parents
+implement SystemdContainer using container_like, service_name, unit_file, parents

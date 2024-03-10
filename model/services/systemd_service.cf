@@ -22,6 +22,7 @@ import exec
 SystemdService._file_resources [0:] -- std::Resource
 SystemdService._configuration_resources [0:] -- std::Resource
 SystemdService._systemd_config_dir [1] -- std::Directory
+SystemdService._symlink [1] -- std::Symlink
 
 
 implementation service_configuration for SystemdService:
@@ -129,6 +130,36 @@ implementation stop_service for SystemdService:
 end
 
 
-implement SystemdService using service_configuration
+implementation service_activation for SystemdService:
+    """
+    Make sure the symlink to our file is present or not depending on
+    whether the service is activated or not.
+    """
+    user = self._container_like.owner
+    host = self._container_like.host
+
+    self._symlink = std::Symlink(
+        source=f"../{self.service_name}",
+        target=f"{self._systemd_config_dir.path}default.target.wants/{self.service_name}",
+        send_event=true,
+        reload=true,
+        host=host,
+        purged=self.state == "removed" or not self.enabled,
+        requires=self.requires,
+        provides=self.provides,
+    )
+    self._file_resources += self._symlink
+
+    if self.state == "removed":
+        # When deleting the service, remove the symlink before the file
+        self.unit.requires += self._symlink
+    else:
+        # Otherwise, do the opposite
+        self.unit.provides += self._symlink
+    end
+end
+
+
+implement SystemdService using service_configuration, service_activation
 implement SystemdService using run_service when self.state == "running"
 implement SystemdService using stop_service when self.state != "running"
