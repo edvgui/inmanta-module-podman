@@ -54,6 +54,13 @@ def test_model(project: Project, purged: bool = False) -> None:
 def test_deploy(project: Project) -> None:
     # Make sure the network is there
     test_model(project, purged=False)
+
+    # Resolve the network id
+    network_resource = project.get_resource("podman::Network")
+    assert network_resource is not None
+    network_resource_id = network_resource.id.resource_str()
+
+    # Make sure the network gets deployed
     project.deploy_resource("podman::Network")
     assert not project.dryrun_resource("podman::Network")
 
@@ -63,9 +70,7 @@ def test_deploy(project: Project) -> None:
     discovered_resources = [
         res.discovered_resource_id for res in result.discovered_resources
     ]
-    assert (
-        "podman::Network[localhost,q=owner=root&name=test-net]" in discovered_resources
-    )
+    assert network_resource_id in discovered_resources
 
     # Make sure the network is gone
     test_model(project, purged=True)
@@ -79,7 +84,4 @@ def test_deploy(project: Project) -> None:
     discovered_resources = [
         res.discovered_resource_id for res in result.discovered_resources
     ]
-    assert (
-        "podman::Network[localhost,q=owner=root&name=test-net]"
-        not in discovered_resources
-    )
+    assert network_resource_id not in discovered_resources
