@@ -40,6 +40,11 @@ def test_model(project: Project, purged: bool = False) -> None:
             name="docker.io/library/alpine:latest",
             purged={json.dumps(purged)},
         )
+
+        podman::ImageDiscovery(
+            host=host,
+            name=".*",
+        )
     """
 
     project.compile(model, no_dedent=False)
@@ -48,11 +53,34 @@ def test_model(project: Project, purged: bool = False) -> None:
 def test_deploy(project: Project) -> None:
     # Make sure the busybox image is there
     test_model(project, purged=False)
+
+    # Resolve the image id
+    image_resource = project.get_resource("podman::ImageFromRegistry")
+    assert image_resource is not None
+    image_resource_id = image_resource.id.resource_str()
+
+    # Make sure the image gets deployed
     project.deploy_resource("podman::ImageFromRegistry")
     assert not project.dryrun_resource("podman::ImageFromRegistry")
+
+    # Check that the discovery resource finds our image as well
+    result = project.deploy_resource_v2("podman::ImageDiscovery")
+    result.assert_status()
+    discovered_resources = [
+        res.discovered_resource_id for res in result.discovered_resources
+    ]
+    assert image_resource_id in discovered_resources
 
     # Make sure the image is gone
     test_model(project, purged=True)
     assert project.dryrun_resource("podman::ImageFromRegistry")
     project.deploy_resource("podman::ImageFromRegistry")
     assert not project.dryrun_resource("podman::ImageFromRegistry")
+
+    # Check that the discovery resource finds our image as well
+    result = project.deploy_resource_v2("podman::ImageDiscovery")
+    result.assert_status()
+    discovered_resources = [
+        res.discovered_resource_id for res in result.discovered_resources
+    ]
+    assert image_resource_id not in discovered_resources

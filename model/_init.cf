@@ -39,8 +39,6 @@ entity ResourceABC extends std::PurgeableResource, std::ManagedResource:
 end
 ResourceABC.host [1] -- std::Host
 
-index ResourceABC(host, owner, name)
-
 
 entity Network extends ResourceABC:
     """
@@ -68,6 +66,8 @@ Network.subnets [0:] -- podman::network::Subnet.network [1]
     more than one subnet for this network.
 """
 
+index Network(host, owner, name)
+
 
 entity NetworkDiscovery extends ResourceABC:
     """
@@ -78,6 +78,8 @@ entity NetworkDiscovery extends ResourceABC:
     """
     string name = ".*"
 end
+
+index NetworkDiscovery(host, owner, name)
 
 
 entity ContainerLike extends ResourceABC:
@@ -110,6 +112,8 @@ entity Pod extends ContainerLike:
     """
 end
 
+index Pod(host, owner, name)
+
 
 entity Container extends ContainerLike:
     """
@@ -140,6 +144,8 @@ Container.volumes [0:] -- podman::container::Volume.container [1]
 Container.pod [0:1] -- Pod.containers [0:]
 """Run container in an existing pod."""
 
+index Container(host, owner, name)
+
 
 entity Image extends ResourceABC:
     """
@@ -147,7 +153,20 @@ entity Image extends ResourceABC:
     """
 end
 
-index Image(host, name)
+index Image(host, owner, name)
+
+
+entity ImageDiscovery extends ResourceABC:
+    """
+    Discovery resource, to lookup images owned by a user on a host.
+
+    :attr name: The name of the resource is also a filter to apply on the
+        discovered image names.  The filter is a valid podman regex.
+    """
+    string name = ".*"
+end
+
+index ImageDiscovery(host, owner, name)
 
 
 entity ImageFromSource extends Image:
@@ -207,5 +226,6 @@ implement Pod using parents
 implement Container using parents
 implement Container using pod_consistency when self.pod is defined
 implement Image using parents
+implement ImageDiscovery using parents
 implement ImageFromRegistry using parents
 implement ImageFromSource using parents
