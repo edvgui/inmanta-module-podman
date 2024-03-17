@@ -2,7 +2,9 @@
 
 ## v0.2.0 - ?
 
-- Add podman::NetworkDiscovery resource
+- More indexes of module resources to resource entities.
+- Add podman::ImageDiscovery resource.
+- Add podman::NetworkDiscovery resource.
 
 ## v0.1.0 - 2024-03-10
 
