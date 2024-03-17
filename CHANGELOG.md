@@ -1,7 +1,8 @@
 # Changelog
 
-## v0.1.1 - ?
+## v0.2.0 - ?
 
+- Add podman::NetworkDiscovery resource
 
 ## v0.1.0 - 2024-03-10
 
