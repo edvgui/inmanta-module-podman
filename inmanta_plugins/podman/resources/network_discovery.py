@@ -18,7 +18,6 @@
 
 import collections.abc
 import json
-import typing
 
 import pydantic
 
