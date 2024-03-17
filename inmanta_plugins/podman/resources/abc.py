@@ -44,7 +44,7 @@ class ResourceABC(inmanta.resources.PurgeableResource):
 ABC = typing.TypeVar("ABC", bound=ResourceABC)
 
 
-class HandlerABC(inmanta.agent.handler.CRUDHandlerGeneric[ABC]):
+class HandlerABC(typing.Generic[ABC]):
     def run_command(
         self,
         ctx: inmanta.agent.handler.HandlerContext,

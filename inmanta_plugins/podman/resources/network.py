@@ -145,7 +145,10 @@ def build_create_command(config: dict) -> list[str]:
 
 
 @inmanta.agent.handler.provider("podman::Network", "")
-class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC[NetworkResource]):
+class NetworkHandler(
+    inmanta_plugins.podman.resources.abc.HandlerABC[NetworkResource],
+    inmanta.agent.handler.CRUDHandlerGeneric[NetworkResource],
+):
     def calculate_diff(
         self,
         ctx: inmanta.agent.handler.HandlerContext,

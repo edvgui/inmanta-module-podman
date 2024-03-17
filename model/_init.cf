@@ -69,6 +69,17 @@ Network.subnets [0:] -- podman::network::Subnet.network [1]
 """
 
 
+entity NetworkDiscovery extends ResourceABC:
+    """
+    Discovery resource, to lookup networks owned by a user on a host.
+
+    :attr name: The name of the resource is also a filter to apply on the
+        discovered networks names.  The filter is a valid podman regex.
+    """
+    string name = ".*"
+end
+
+
 entity ContainerLike extends ResourceABC:
     """
     Abstraction gathering the properties that both containers and pods
@@ -190,6 +201,7 @@ end
 
 implement ResourceABC using require_agent_config
 implement Network using parents
+implement NetworkDiscovery using parents
 implement ContainerLike using parents
 implement Pod using parents
 implement Container using parents
