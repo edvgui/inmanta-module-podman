@@ -16,11 +16,11 @@
     Contact: edvgui@gmail.com
 """
 
-from pytest_inmanta.plugin import Project
+from pytest_inmanta.plugin import Project, Result
 
 
-def test_model(project: Project) -> None:
-    model = """
+def test_model(project: Project, state: str = "stopped") -> None:
+    model = f"""
         import podman
         import podman::container_like
         import podman::container
@@ -54,10 +54,10 @@ def test_model(project: Project) -> None:
             gidmap=[
                 IdMap(container_id="999", host_id="@1000"),
             ],
-            env={
+            env={{
                 "POSTGRES_USER": "test",
                 "POSTGRES_PASSWORD": "test",
-            },
+            }},
             volumes=[
                 Volume(
                     source="/tmp/pgdata",
@@ -69,9 +69,30 @@ def test_model(project: Project) -> None:
 
         podman::services::SystemdContainer(
             container=db,
-            state="running",
+            state={repr(state)},
             enabled=true,
         )
     """
 
     project.compile(model, no_dedent=False)
+
+
+def test_deploy(project: Project) -> None:
+    # Go over all the supported state, and make sure the resource can
+    # be deployed
+    for state in ["configured", "stopped", "removed"]:
+        # Compile the model
+        test_model(project, state=state)
+
+        # Deploy all the resources
+        project.deploy_all().assert_all()
+
+        # Assert that the desired state is stable
+        dry_run_result = Result(
+            {
+                r: project.dryrun(r, run_as_root=False)
+                for r in project.resources.values()
+                if not r.is_type("std::AgentConfig")
+            }
+        )
+        dry_run_result.assert_has_no_changes()

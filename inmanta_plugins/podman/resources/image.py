@@ -167,7 +167,7 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
             ctx,
             resource,
             command=cmd,
-            timeout=5,
+            timeout=None,
         )
 
         # If the command failed, something went wrong
@@ -243,7 +243,7 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
             ctx,
             resource,
             command=["podman", "image", "pull", source],
-            timeout=5,
+            timeout=None,
         )
 
         # If the command failed, something went wrong

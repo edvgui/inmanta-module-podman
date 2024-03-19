@@ -162,4 +162,4 @@ end
 
 implement SystemdService using service_configuration, service_activation
 implement SystemdService using run_service when self.state == "running"
-implement SystemdService using stop_service when self.state != "running"
+implement SystemdService using stop_service when self.state == "stopped"

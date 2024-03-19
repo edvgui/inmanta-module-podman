@@ -1,7 +1,9 @@
 # Changelog
 
-## v0.2.1 - ?
+## v0.3.0 - ?
 
+- Disable timeout for image build/pull.
+- Add `configured` state to pod/container service.
 
 ## v0.2.0 - 2024-03-17
 
