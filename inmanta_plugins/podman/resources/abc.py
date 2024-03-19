@@ -51,7 +51,7 @@ class HandlerABC(typing.Generic[ABC]):
         resource: ABC,
         *,
         command: list[str],
-        timeout: int,
+        timeout: typing.Optional[int],
         cwd: typing.Optional[str] = None,
         env: dict[str, str] = {},
         run_as: typing.Optional[str] = None,
