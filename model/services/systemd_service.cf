@@ -47,6 +47,8 @@ implementation service_configuration for SystemdService:
         owner=user,
         group=user,
         host=host,
+        send_event=true,
+        reload=true,
         # requires=self.requires,  # We don't need this directory to be created after our requires
         provides=self.provides,  # But we need to make sure it is created before our provides
     )

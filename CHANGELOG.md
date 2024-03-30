@@ -4,6 +4,7 @@
 
 - Disable timeout for image build/pull.
 - Add `configured` state to pod/container service.
+- Set `send_event=true` for systemd_service files.
 
 ## v0.2.0 - 2024-03-17
 
