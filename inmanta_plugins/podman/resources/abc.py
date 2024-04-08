@@ -24,7 +24,9 @@ import inmanta.export
 import inmanta.resources
 
 
-class ResourceABC(inmanta.resources.PurgeableResource):
+class ResourceABC(
+    inmanta.resources.PurgeableResource, inmanta.resources.ManagedResource
+):
     fields = (
         "owner",
         "name",
