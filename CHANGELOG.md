@@ -2,6 +2,7 @@
 
 ## v0.3.1 - ?
 
+- Fix unmanaged resource usage
 
 ## v0.3.0 - 2024-04-07
 
