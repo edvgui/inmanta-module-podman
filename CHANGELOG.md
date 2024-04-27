@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.4.1 - ?
+
+
 ## v0.4.0 - 2024-04-28
 
 - Manage extra hosts in container's /etc/hosts file
