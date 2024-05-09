@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.4.2 - ?
+
+
 ## v0.4.1 - 2024-05-09
 
 - Make sure to login as the new user when becoming the resource owner user
