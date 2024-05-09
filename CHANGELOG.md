@@ -2,6 +2,7 @@
 
 ## v0.4.1 - ?
 
+- Make sure to login as the new user when becoming the resource owner user
 
 ## v0.4.0 - 2024-04-28
 
