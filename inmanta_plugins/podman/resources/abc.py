@@ -77,7 +77,7 @@ class HandlerABC(typing.Generic[ABC]):
         # The io helper will always run command as root, if we want to use another
         # user, we have to use sudo to change user.
         if run_as != "root":
-            command = ["sudo", "-E", "-u", run_as, "--", *command]
+            command = ["sudo", "--login", "-u", run_as, "--", *command]
 
         # Run the command on the host
         stdout, stderr, return_code = self._io.run(
