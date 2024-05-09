@@ -38,7 +38,7 @@ implementation service_configuration for SystemdService:
 
     systemctl_command = user == "root"
         ? "systemctl"
-        : f"sudo -E -u {user} -- systemctl --user"
+        : f"sudo --login -u {user} -- systemctl --user"
 
     # Make sure that the systemd directory exists
     self._systemd_config_dir = std::Directory(
@@ -84,7 +84,7 @@ implementation run_service for SystemdService:
 
     systemctl_command = user == "root"
         ? "systemctl"
-        : f"sudo -E -u {user} -- systemctl --user"
+        : f"sudo --login -u {user} -- systemctl --user"
 
     # If the service is not active, we start it
     run_service = exec::Run(
@@ -109,7 +109,7 @@ implementation stop_service for SystemdService:
 
     systemctl_command = user == "root"
         ? "systemctl"
-        : f"sudo -E -u {user} -- systemctl --user"
+        : f"sudo --login -u {user} -- systemctl --user"
 
     # If the service is active, we stop it
     stop_service = exec::Run(
