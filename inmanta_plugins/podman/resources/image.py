@@ -27,6 +27,17 @@ import inmanta.resources
 import inmanta_plugins.podman.resources.abc
 
 
+def valid_digest(digest: str, repo_digests: list[str]) -> bool:
+    """
+    Check if the given digest value is a match for one of the repo digests
+    entries.  The format of the repo digests is <repository>:<tag>@<digest>
+
+    :param digest: The digest to validate
+    :param repo_digests: The list of repo digest to compare it to
+    """
+    return digest in [repo_digest.split("@")[-1] for repo_digest in repo_digests]
+
+
 class ImageResource(inmanta_plugins.podman.resources.abc.ResourceABC):
     fields = ("digest",)
     digest: str | None
@@ -220,8 +231,11 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
     ) -> None:
         self.build_image(ctx, resource)
 
-        if changes["digest"]["current"] != self.inspect_image(ctx, resource)["Digest"]:
-            # If digest didn't change, the image was not updated, the pull was a noop
+        if not valid_digest(
+            changes["digest"]["current"],
+            self.inspect_image(ctx, resource)["RepoDigests"],
+        ):
+            # If the digest has changed, we have a different image
             ctx.set_updated()
 
 
@@ -249,7 +263,10 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
             # The image was not found
             raise inmanta.agent.handler.ResourcePurged()
 
-        resource.digest = existing_image["Digest"]
+        if not valid_digest(resource.digest, existing_image["RepoDigests"]):
+            # Only detect a different digest if the desired digest (which may be None)
+            # is not part of the image ones
+            resource.digest = existing_image["Digest"]
 
     def pull_image(
         self,
@@ -296,6 +313,9 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
     ) -> None:
         self.pull_image(ctx, resource)
 
-        if changes["digest"]["current"] != self.inspect_image(ctx, resource)["Digest"]:
-            # If digest didn't change, the image was not updated, the pull was a noop
+        if not valid_digest(
+            changes["digest"]["current"],
+            self.inspect_image(ctx, resource)["RepoDigests"],
+        ):
+            # If the digest has changed, we have a different image
             ctx.set_updated()

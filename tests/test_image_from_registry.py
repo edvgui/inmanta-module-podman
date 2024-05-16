@@ -21,7 +21,9 @@ import json
 from pytest_inmanta.plugin import Project
 
 
-def test_model(project: Project, purged: bool = False) -> None:
+def test_model(
+    project: Project, purged: bool = False, digest: str | None = None
+) -> None:
     model = f"""
         import podman
         import podman::network
@@ -38,6 +40,7 @@ def test_model(project: Project, purged: bool = False) -> None:
         podman::ImageFromRegistry(
             host=host,
             name="docker.io/library/alpine:latest",
+            digest={repr(digest) if digest is not None else "null"},
             purged={json.dumps(purged)},
         )
 
@@ -59,17 +62,22 @@ def test_deploy(project: Project) -> None:
     assert image_resource is not None
     image_resource_id = image_resource.id.resource_str()
 
-    # Make sure the image gets deployed
+    # Make sure the image gets deployed, we don't force the digest, the image should
+    # always detect a change
+    assert project.dryrun_resource("podman::ImageFromRegistry")
     project.deploy_resource("podman::ImageFromRegistry")
-    assert not project.dryrun_resource("podman::ImageFromRegistry")
+    assert project.dryrun_resource("podman::ImageFromRegistry")
 
     # Check that the discovery resource finds our image as well
     result = project.deploy_resource_v2("podman::ImageDiscovery")
     result.assert_status()
-    discovered_resources = [
-        res.discovered_resource_id for res in result.discovered_resources
-    ]
-    assert image_resource_id in discovered_resources
+    images = {res.discovered_resource_id: res for res in result.discovered_resources}
+    assert image_resource_id in images
+
+    # Make sure that when we set the digest, the resource doesn't need to
+    # be deployed again
+    test_model(project, digest=images[image_resource_id].values["digest"])
+    assert not project.dryrun_resource("podman::ImageFromRegistry")
 
     # Make sure the image is gone
     test_model(project, purged=True)
