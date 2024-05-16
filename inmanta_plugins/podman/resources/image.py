@@ -28,7 +28,8 @@ import inmanta_plugins.podman.resources.abc
 
 
 class ImageResource(inmanta_plugins.podman.resources.abc.ResourceABC):
-    pass
+    fields = ("digest",)
+    digest: str | None
 
 
 IR = typing.TypeVar("IR", bound=ImageResource)
@@ -67,6 +68,21 @@ class ImageHandler(
             raise RuntimeError("Failed to inspect image")
 
         return json.loads(stdout)[0]
+
+    def calculate_diff(
+        self,
+        ctx: inmanta.agent.handler.HandlerContext,
+        current: IR,
+        desired: IR,
+    ) -> dict[str, dict[str, typing.Any]]:
+        changes = super().calculate_diff(ctx, current, desired)
+
+        if not changes and desired.digest is None:
+            # When there is no change and there is no desired digest, force the detection
+            # of a change by including the digest in the diff
+            changes["digest"] = {"current": current.digest, "desired": None}
+
+        return changes
 
     def delete_resource(
         self,
@@ -127,6 +143,18 @@ class ImageFromSourceResource(ImageResource):
             options.append(f"--file={entity.file}")
         return options
 
+    @classmethod
+    def get_digest(
+        cls,
+        exporter: inmanta.export.Exporter,
+        entity: inmanta.execute.proxy.DynamicProxy,
+    ) -> None:
+        """
+        The digest can't be known before building the image, so we just
+        return None
+        """
+        return None
+
 
 @inmanta.agent.handler.provider("podman::ImageFromSource", "")
 class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
@@ -141,10 +169,7 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
             # The image was not found
             raise inmanta.agent.handler.ResourcePurged()
 
-        # Always detect changes, we have no way to know if our image is up to date
-        resource.options = None
-
-        ctx.set("current_digest", existing_image["Digest"])
+        resource.digest = existing_image["Digest"]
 
     def build_image(
         self,
@@ -195,8 +220,8 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
     ) -> None:
         self.build_image(ctx, resource)
 
-        if ctx.get("current_digest") != self.inspect_image(ctx, resource)["Digest"]:
-            # If digest didn't change, the image was not updated, the rebuild was a noop
+        if changes["digest"]["current"] != self.inspect_image(ctx, resource)["Digest"]:
+            # If digest didn't change, the image was not updated, the pull was a noop
             ctx.set_updated()
 
 
