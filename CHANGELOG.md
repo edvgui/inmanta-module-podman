@@ -2,6 +2,7 @@
 
 ## v0.4.2 - ?
 
+- Always detect change when no image digest is specified
 
 ## v0.4.1 - 2024-05-09
 
