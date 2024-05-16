@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.2 - ?
+## v0.4.2 - 2024-05-16
 
 - Always detect change when no image digest is specified
 
