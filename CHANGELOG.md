@@ -1,7 +1,8 @@
 # Changelog
 
-## v0.4.3 - ?
+## v0.5.0 - ?
 
+- Support periodic, short-lived container-based services.
 
 ## v0.4.2 - 2024-05-16
 
