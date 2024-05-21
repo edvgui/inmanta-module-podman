@@ -17,6 +17,7 @@
 """
 import std
 import exec
+import files
 
 
 SystemdService._file_resources [0:] -- std::Resource
