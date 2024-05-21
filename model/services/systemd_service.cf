@@ -22,7 +22,14 @@ import exec
 SystemdService._file_resources [0:] -- std::Resource
 SystemdService._configuration_resources [0:] -- std::Resource
 SystemdService._systemd_config_dir [1] -- std::Directory
-SystemdService._symlink [1] -- std::Symlink
+
+
+implementation timer_name for SystemdService:
+    """
+    Calculate an assign the timer unit name.
+    """
+    self.timer_name = join(std::split(self.service_name, ".service"), ".timer")
+end
 
 
 implementation service_configuration for SystemdService:
@@ -75,6 +82,42 @@ implementation service_configuration for SystemdService:
 end
 
 
+implementation service_timer for SystemdService:
+    """
+    Setup a timer file when the service should be executed periodically.
+    """
+    if self.on_calendar is defined:
+        self.timer = files::SystemdUnitFile(
+            path=f"{self._systemd_config_dir.path}{self.timer_name}",
+            permissions=644,
+            owner=user,
+            group=user,
+            host=host,
+            unit=Unit(
+                description=self.description is defined ? self.description : f"Podman {self.timer_name}",
+                documentation=["https://github.com/edvgui/inmanta-module-podman"],
+                requires=[self.service_name],
+            ),
+            timer=Timer(
+                on_calendar=self.on_calendar,
+                unit=self.service_name,
+            ),
+            install=Install(
+                wanted_by=["timers.target"],
+            ),
+            send_event=true,
+            purged=self.state == "removed",
+            requires=self.requires,
+            provides=self.provides,
+        )
+        self.timer.requires += self._systemd_config_dir
+        self._file_resources += self.timer
+    else:
+        self.timer = null
+    end
+end
+
+
 implementation run_service for SystemdService:
     """
     Make sure that the service is running.
@@ -82,14 +125,18 @@ implementation run_service for SystemdService:
     user = self._container_like.owner
     host = self._container_like.host
 
+    # When on_calendar is configured, we should start the timer and not
+    # the service itself
+    unit_name = self.on_calendar is defined ? self.timer_name : self.service_name
+
     systemctl_command = user == "root"
         ? "systemctl"
         : f"sudo --login -u {user} -- systemctl --user"
 
     # If the service is not active, we start it
     run_service = exec::Run(
-        command=f"{systemctl_command} start {self.service_name}",
-        unless=exec::in_shell(f"{systemctl_command} show {self.service_name} --property=ActiveState | grep ActiveState=active"),
+        command=f"{systemctl_command} start {unit_name}",
+        unless=exec::in_shell(f"{systemctl_command} show {unit_name} --property=ActiveState | grep ActiveState=active"),
         host=host,
         send_event=true,
         requires=self.requires,
@@ -129,6 +176,27 @@ implementation stop_service for SystemdService:
         # Otherwise, we expect the files to be there in order to stop the service properly
         stop_service.requires += self._configuration_resources
     end
+
+    if self.on_calendar is defined:
+        # If the timer is active, we stop it
+        stop_timer = exec::Run(
+            command=f"{systemctl_command} stop {self.timer_name}",
+            onlyif=exec::in_shell(f"{systemctl_command} show {self.timer_name} --property=ActiveState | grep ActiveState=active"),
+            host=host,
+            send_event=true,
+            requires=self.requires,
+            provides=[self.provides, stop_service],
+        )
+        self.resources += stop_timer
+
+        if self.state == "removed":
+            # If the files will be removed, we should always stop the service first
+            stop_timer.provides += self._configuration_resources
+        else:
+            # Otherwise, we expect the files to be there in order to stop the service properly
+            stop_timer.requires += self._configuration_resources
+        end
+    end
 end
 
 
@@ -140,9 +208,13 @@ implementation service_activation for SystemdService:
     user = self._container_like.owner
     host = self._container_like.host
 
-    self._symlink = std::Symlink(
-        source=f"../{self.service_name}",
-        target=f"{self._systemd_config_dir.path}default.target.wants/{self.service_name}",
+    # When on_calendar is configured, we want to enable/disable the timer unit attached
+    # to the service, not the service itself
+    unit_name = self.on_calendar is defined ? self.timer_name : self.service_name
+
+    symlink = std::Symlink(
+        source=f"../{unit_name}",
+        target=f"{self._systemd_config_dir.path}default.target.wants/{unit_name}",
         send_event=true,
         reload=true,
         host=host,
@@ -150,18 +222,18 @@ implementation service_activation for SystemdService:
         requires=self.requires,
         provides=self.provides,
     )
-    self._file_resources += self._symlink
+    self._file_resources += symlink
 
     if self.state == "removed":
         # When deleting the service, remove the symlink before the file
-        self.unit.requires += self._symlink
+        self.unit.requires += symlink
     else:
         # Otherwise, do the opposite
-        self.unit.provides += self._symlink
+        self.unit.provides += symlink
     end
 end
 
 
-implement SystemdService using service_configuration, service_activation
+implement SystemdService using service_configuration, service_activation, timer_name, service_timer
 implement SystemdService using run_service when self.state == "running"
 implement SystemdService using stop_service when self.state == "stopped"
