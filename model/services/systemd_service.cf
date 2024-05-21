@@ -29,7 +29,7 @@ implementation timer_name for SystemdService:
     """
     Calculate an assign the timer unit name.
     """
-    self.timer_name = join(std::split(self.service_name, ".service"), ".timer")
+    self.timer_name = join(std::split(self.service_name, ".service"), separator=".timer")
 end
 
 
@@ -87,6 +87,9 @@ implementation service_timer for SystemdService:
     """
     Setup a timer file when the service should be executed periodically.
     """
+    user = self._container_like.owner
+    host = self._container_like.host
+
     if self.on_calendar is defined:
         self.timer = files::SystemdUnitFile(
             path=f"{self._systemd_config_dir.path}{self.timer_name}",
