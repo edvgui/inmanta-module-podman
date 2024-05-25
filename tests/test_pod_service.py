@@ -19,7 +19,9 @@
 from pytest_inmanta.plugin import Project, Result
 
 
-def test_model(project: Project, state: str = "stopped", on_calendar: str | None = None) -> None:
+def test_model(
+    project: Project, state: str = "stopped", on_calendar: str | None = None
+) -> None:
     model = f"""
         import podman
         import podman::container_like
