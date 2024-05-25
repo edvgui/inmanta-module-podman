@@ -22,7 +22,7 @@ import podman::services::systemd_service
 import files
 
 
-typedef service_state_t as string matching self in ["configured", "stopped", "running", "removed"]
+typedef service_state_t as string matching self in ["configured", "stopped", "restart", "running", "removed"]
 
 
 entity SystemdService:
@@ -37,24 +37,38 @@ entity SystemdService:
         - stopped: That means that all configuration files should be present on
             the host, but the service should not be running.
         - running: Same as stopped, except that the service should be running.
+        - restart: Meaning that the service should be restarted, regardless of whether
+            it was running or not before.
         - removed: All configuration files should be removed.
 
+    :attr name: The name of the server, the unit file created will be named accordingly, so
+        the name should end with the .service suffix.
+    :attr description: A description for the unit.
+    :attr on_calendar: When specified, also configure a timer unit, that will trigger the
+        service unit for matching calendar times.  The expression in this field should be
+        a valid according to the systemd.timer (5) specifications.
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
 
     :attr service_name: Attribute used internally to save the name of the top-level
         service to manage.
+    :attr timer_name: Attribute used internally to save the name of the top-level
+        timer to manager.  It is derived from the service_name attribute, swaping its
+        .service suffix for a .timer suffix.
     """
     string? name = null
     string? description = null
+    string? on_calendar = null
     service_state_t state
     bool enabled = true
 
     string service_name
+    string timer_name
 end
 SystemdService._container_like [1] -- podman::ContainerLike._systemd_service [0:1]
 SystemdService.resources [0:] -- std::Resource
 SystemdService.unit [1] -- files::SystemdUnitFile
+SystemdService.timer [0:1] -- files::SystemdUnitFile
 
 
 entity SystemdPod extends SystemdService:

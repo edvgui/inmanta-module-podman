@@ -19,7 +19,9 @@
 from pytest_inmanta.plugin import Project, Result
 
 
-def test_model(project: Project, state: str = "stopped") -> None:
+def test_model(
+    project: Project, state: str = "stopped", on_calendar: str | None = None
+) -> None:
     model = f"""
         import podman
         import podman::container_like
@@ -76,6 +78,7 @@ def test_model(project: Project, state: str = "stopped") -> None:
         podman::services::SystemdPod(
             pod=pod,
             state={repr(state)},
+            on_calendar={repr(on_calendar) if on_calendar is not None else "null"},
             enabled=true,
         )
     """
@@ -86,19 +89,20 @@ def test_model(project: Project, state: str = "stopped") -> None:
 def test_deploy(project: Project) -> None:
     # Go over all the supported state, and make sure the resource can
     # be deployed
-    for state in ["configured", "stopped", "removed"]:
-        # Compile the model
-        test_model(project, state=state)
+    for on_calendar in [None, "*-*-* *:*:00"]:
+        for state in ["configured", "stopped", "removed"]:
+            # Compile the model
+            test_model(project, state=state, on_calendar=on_calendar)
 
-        # Deploy all the resources
-        project.deploy_all().assert_all()
+            # Deploy all the resources
+            project.deploy_all().assert_all()
 
-        # Assert that the desired state is stable
-        dry_run_result = Result(
-            {
-                r: project.dryrun(r, run_as_root=False)
-                for r in project.resources.values()
-                if not r.is_type("std::AgentConfig")
-            }
-        )
-        dry_run_result.assert_has_no_changes()
+            # Assert that the desired state is stable
+            dry_run_result = Result(
+                {
+                    r: project.dryrun(r, run_as_root=False)
+                    for r in project.resources.values()
+                    if not r.is_type("std::AgentConfig")
+                }
+            )
+            dry_run_result.assert_has_no_changes()
