@@ -20,8 +20,23 @@ import exec
 import files
 
 
-SystemdService._file_resources [0:] -- std::Resource
-SystemdService._configuration_resources [0:] -- std::Resource
+SystemdService.file_resources [0:] -- std::Resource
+"""
+Relation containing all the file resources managed by this service.
+"""
+
+SystemdService.runtime_resources [0:] -- std::Resource
+"""
+Relation containing all the runtime resources, these are exec commands
+starting and stopping the service.
+"""
+
+SystemdService.configuration_resources [0:] -- std::Resource
+"""
+Relation containing all the configuration resources, these are the resources
+making sure that the service ready to be deployed.
+"""
+
 SystemdService._systemd_config_dir [1] -- std::Directory
 
 
@@ -60,7 +75,7 @@ implementation service_configuration for SystemdService:
         # requires=self.requires,  # We don't need this directory to be created after our requires
         provides=self.provides,  # But we need to make sure it is created before our provides
     )
-    self._file_resources += self._systemd_config_dir
+    self.file_resources += self._systemd_config_dir
 
     # Run systemctl daemon-reload after any config file change
     reload = exec::Run(
@@ -69,17 +84,32 @@ implementation service_configuration for SystemdService:
         send_event=true,
         requires=[
             self.requires,  # We don't want to run this command before any of our requires
-            self._file_resources,  # We need to run this command every time the files have been changed
+            self.file_resources,  # We need to run this command every time the files have been changed
         ],
         # provides=self.provides,  # We don't need to run this command before any of our provides
     )
-    self._configuration_resources += reload
+    self.configuration_resources += reload
 
     # All file resources are configuration resources
-    self._configuration_resources += self._file_resources
+    self.configuration_resources += self.file_resources
 
     # All configuration resources are resources of the service
-    self.resources += self._configuration_resources
+    self.resources += self.configuration_resources
+
+    # All runtime resources are resources of the service
+    self.resources += self.runtime_resources
+
+    # In most cases, the runtime resources (start/restart/stop) of the service
+    # should be deployed once the files have been placed on the system
+    # The only exception is the removed state, which ensure that the service
+    # is both stopped and removed, in this case we first stop it then remove it.
+    for resource in self.runtime_resources:
+        if self.state == "removed":
+            resource.provides += self.configuration_resources
+        else:
+            resource.requires += self.configuration_resources
+        end
+    end
 end
 
 
@@ -115,7 +145,7 @@ implementation service_timer for SystemdService:
             provides=self.provides,
         )
         self.timer.requires += self._systemd_config_dir
-        self._file_resources += self.timer
+        self.file_resources += self.timer
     else:
         self.timer = null
     end
@@ -138,16 +168,42 @@ implementation run_service for SystemdService:
         : f"sudo --login -u {user} -- systemctl --user"
 
     # If the service is not active, we start it
-    run_service = exec::Run(
+    self.runtime_resources = exec::Run(
         command=f"{systemctl_command} start {unit_name}",
         unless=exec::in_shell(f"{systemctl_command} show {unit_name} --property=ActiveState | grep ActiveState=active"),
         host=host,
         send_event=true,
+        reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
         provides=self.provides,
     )
-    run_service.requires += self._configuration_resources
-    self.resources += run_service
+end
+
+
+implementation restart_service for SystemdService:
+    """
+    Make sure the the service is restarted.
+    """
+    user = self._container_like.owner
+    host = self._container_like.host
+
+    # When on_calendar is configured, we should start the timer and not
+    # the service itself
+    unit_name = self.on_calendar is defined ? self.timer_name : self.service_name
+
+    systemctl_command = user == "root"
+        ? "systemctl"
+        : f"sudo --login -u {user} -- systemctl --user"
+
+    # If the service is not active, we start it
+    self.runtime_resources += exec::Run(
+        command=f"{systemctl_command} restart {unit_name}",
+        host=host,
+        send_event=true,
+        reload="true",  # Dummy command, we don't want to execute our command twice
+        requires=self.requires,
+        provides=self.provides,
+    )
 end
 
 
@@ -168,18 +224,11 @@ implementation stop_service for SystemdService:
         onlyif=exec::in_shell(f"{systemctl_command} show {self.service_name} --property=ActiveState | grep ActiveState=active"),
         host=host,
         send_event=true,
+        reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
         provides=self.provides,
     )
-    self.resources += stop_service
-
-    if self.state == "removed":
-        # If the files will be removed, we should always stop the service first
-        stop_service.provides += self._configuration_resources
-    else:
-        # Otherwise, we expect the files to be there in order to stop the service properly
-        stop_service.requires += self._configuration_resources
-    end
+    self.runtime_resources += stop_service
 
     if self.on_calendar is defined:
         # If the timer is active, we stop it
@@ -188,18 +237,11 @@ implementation stop_service for SystemdService:
             onlyif=exec::in_shell(f"{systemctl_command} show {self.timer_name} --property=ActiveState | grep ActiveState=active"),
             host=host,
             send_event=true,
+            reload="true",  # Dummy command, we don't want to execute our command twice
             requires=self.requires,
             provides=[self.provides, stop_service],
         )
-        self.resources += stop_timer
-
-        if self.state == "removed":
-            # If the files will be removed, we should always stop the service first
-            stop_timer.provides += self._configuration_resources
-        else:
-            # Otherwise, we expect the files to be there in order to stop the service properly
-            stop_timer.requires += self._configuration_resources
-        end
+        self.runtime_resources += stop_timer
     end
 end
 
@@ -226,7 +268,7 @@ implementation service_activation for SystemdService:
         requires=self.requires,
         provides=self.provides,
     )
-    self._file_resources += symlink
+    self.file_resources += symlink
 
     if self.state == "removed":
         # When deleting the service, remove the symlink before the file
@@ -240,4 +282,5 @@ end
 
 implement SystemdService using service_configuration, service_activation, timer_name, service_timer
 implement SystemdService using run_service when self.state == "running"
-implement SystemdService using stop_service when self.state == "stopped"
+implement SystemdService using restart_service when self.state == "restart"
+implement SystemdService using stop_service when self.state in ["stopped", "removed"]

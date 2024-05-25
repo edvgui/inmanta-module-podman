@@ -112,7 +112,7 @@ implementation unit_file for SystemdPod:
         provides=self.provides,
     )
     self.unit.requires += self._systemd_config_dir
-    self._file_resources += self.unit
+    self.file_resources += self.unit
 end
 
 
