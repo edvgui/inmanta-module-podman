@@ -47,6 +47,10 @@ entity SystemdService:
     :attr on_calendar: When specified, also configure a timer unit, that will trigger the
         service unit for matching calendar times.  The expression in this field should be
         a valid according to the systemd.timer (5) specifications.
+    :attr systemd_config_dir: The directory in which the unit should be created.
+        If not specified, defaults to
+        - "/etc/systemd/system/" for root containers
+        - "/home/{user}/.config/systemd/user/" for non root containers
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
 
@@ -59,6 +63,7 @@ entity SystemdService:
     string? name = null
     string? description = null
     string? on_calendar = null
+    string? systemd_unit_dir = null
     service_state_t state
     bool enabled = true
 
