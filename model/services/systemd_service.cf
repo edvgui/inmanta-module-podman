@@ -55,9 +55,11 @@ implementation service_configuration for SystemdService:
     user = self._container_like.owner
     host = self._container_like.host
 
-    systemd_path = user == "root"
-        ? "/etc/systemd/system/"
-        : f"/home/{user}/.config/systemd/user/"
+    systemd_path = self.systemd_unit_dir is defined
+        ? self.systemd_unit_dir
+            : user == "root"
+                ? "/etc/systemd/system/"
+                : f"/home/{user}/.config/systemd/user/"
 
     systemctl_command = user == "root"
         ? "systemctl"
