@@ -49,8 +49,8 @@ entity SystemdService:
         a valid according to the systemd.timer (5) specifications.
     :attr systemd_config_dir: The directory in which the unit should be created.
         If not specified, defaults to
-        - "/etc/systemd/system/" for root containers
-        - "/home/{user}/.config/systemd/user/" for non root containers
+        - "/etc/systemd/system/" for rootful containers/pods
+        - "/home/{user}/.config/systemd/user/" for rootless containers/pods
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
 
