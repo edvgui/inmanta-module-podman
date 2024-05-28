@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.6.0 - ?
+## v0.6.0 - 2024-05-28
 
 - Specify systemd unit folder for SystemdContainer/Pod service
 
