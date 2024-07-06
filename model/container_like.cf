@@ -17,6 +17,20 @@
 """
 import podman
 
+typedef podman_command_t as string matching self in [
+    "podman-run",
+    "podman-stop",
+    "podman-rm",
+    "podman-pod-create",
+    "podman-pod-start",
+    "podman-pod-stop",
+    "podman-pod-rm",
+]
+"""
+Name of podman commands or subcommands which are used to manage containers
+and pods.
+"""
+
 
 entity Network:
     """
@@ -113,6 +127,23 @@ entity IdMap:
 end
 
 
+entity ExtraArg:
+    """
+    An extra argument to add to the create command of the container/pod.
+    The argument will be serialized as `--{name}={value}` if value is defined,
+    and as `--{name}` otherwise.
+
+    :attr cmd: The name of the podman command for which the option is relevant
+    :attr name: The name of the option
+    :attr value: The value for the option, if it is left to null, we consider the
+        option to be a flag.
+    """
+    podman_command_t cmd = "podman-run"
+    string name
+    string? value = null
+end
+
+
 implementation bridge_cli_option for BridgeNetwork:
     """
     Compose the cli option required to connect the container or pod to a bridge.
@@ -170,3 +201,4 @@ implement BridgeNetwork using bridge_cli_option
 implement Host using host_cli_option
 implement Publish using publish_cli_option
 implement IdMap using id_map_cli_option
+implement ExtraArg using std::none
