@@ -201,3 +201,4 @@ implement BridgeNetwork using bridge_cli_option
 implement Host using host_cli_option
 implement Publish using publish_cli_option
 implement IdMap using id_map_cli_option
+implement ExtraArg using std::none
