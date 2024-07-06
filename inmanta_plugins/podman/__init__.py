@@ -82,6 +82,22 @@ def options(name: str, values: typing.Sequence[object]) -> typing.Sequence[str]:
     return [f"--{name}={value.cli_option}" for value in values]
 
 
+def extra_args(command: str, args: typing.Sequence[object]) -> typing.Sequence[str]:
+    """
+    Helper function to provide the list of serialized extra arguments assigned
+    to a container like entity, for a specific command.
+
+    :param command: The command which wants to fetch all the special arguments.
+    :param args: The full set of arguments which might contain extra arguments
+        for our command.
+    """
+    return [
+        f"--{arg.name}={arg.value}" if arg.value is not None else f"--{arg.name}"
+        for arg in args
+        if arg.cmd == command
+    ]
+
+
 @inmanta.plugins.plugin()
 def container_rm(
     container: "podman::Container",  # type: ignore
@@ -108,6 +124,7 @@ def container_rm(
         "--force" if force else None,
         "--ignore" if ignore else None,
         option("time", time),
+        *extra_args("podman-rm", container.extra_args),
         container.name if cidfile is None else None,
     ]
     return " ".join(i for i in cmd if i is not None)
@@ -158,6 +175,7 @@ def container_run(
         option("env-file", container.env_file),
         option("entrypoint", container.entrypoint),
         option("user", container.user),
+        *extra_args("podman-run", container.extra_args),
         container.image,
         container.command,
     ]
@@ -187,6 +205,7 @@ def container_stop(
         option("cidfile", cidfile),
         "--ignore" if ignore else None,
         option("time", time),
+        *extra_args("podman-stop", container.extra_args),
         container.name if cidfile is None else None,
     ]
     return " ".join(i for i in cmd if i is not None)
@@ -225,6 +244,7 @@ def pod_create(
         option("hostname", pod.hostname),
         *options("uidmap", pod.uidmap),
         *options("gidmap", pod.gidmap),
+        *extra_args("podman-pod-create", pod.extra_args),
         f"--name={pod.name}",
     ]
     return " ".join(i for i in cmd if i is not None)
@@ -257,6 +277,7 @@ def pod_rm(
         "--force" if force else None,
         "--ignore" if ignore else None,
         option("time", time),
+        *extra_args("podman-pod-rm", pod.extra_args),
         pod.name if pod_id_file is None else None,
     ]
     return " ".join(i for i in cmd if i is not None)
@@ -279,6 +300,7 @@ def pod_start(
         "pod",
         "start",
         option("pod-id-file", pod_id_file),
+        *extra_args("podman-pod-start", pod.extra_args),
         pod.name if pod_id_file is None else None,
     ]
     return " ".join(i for i in cmd if i is not None)
@@ -307,6 +329,7 @@ def pod_stop(
         option("pod-id-file", pod_id_file),
         "--ignore" if ignore else None,
         option("time", time),
+        *extra_args("podman-pod-stop", pod.extra_args),
         pod.name if pod_id_file is None else None,
     ]
     return " ".join(i for i in cmd if i is not None)

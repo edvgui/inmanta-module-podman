@@ -110,6 +110,12 @@ ContainerLike.gidmap [0:] -- podman::container_like::IdMap
 ContainerLike.uidmap [0:] -- podman::container_like::IdMap
 """Map the user ids of the container to ids on the host"""
 
+ContainerLike.extra_args [0:] -- podman::container_like::ExtraArg
+"""
+Relation to insert any currently unsupported argument type in any of the commands
+that might be used to create/start/stop/remove the pod or container
+"""
+
 
 entity Pod extends ContainerLike:
     """
