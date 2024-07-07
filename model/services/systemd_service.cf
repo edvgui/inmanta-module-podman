@@ -264,7 +264,6 @@ implementation service_activation for SystemdService:
         target=f"{self._systemd_config_dir.path}{unit_name}",
         path=f"{self._systemd_config_dir.path}default.target.wants/{unit_name}",
         host=host,
-        permissions=777,
         owner=user,
         group=user,
         purged=self.state == "removed" or not self.enabled,
