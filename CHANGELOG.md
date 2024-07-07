@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.7.1 - ?
+
+
 ## v0.7.0 - 2024-07-07
 
 - Fix service enabling, using full path as symlink target
