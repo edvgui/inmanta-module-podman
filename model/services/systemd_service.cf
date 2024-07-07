@@ -260,12 +260,12 @@ implementation service_activation for SystemdService:
     # to the service, not the service itself
     unit_name = self.on_calendar is defined ? self.timer_name : self.service_name
 
-    symlink = std::Symlink(
-        source=f"../{unit_name}",
-        target=f"{self._systemd_config_dir.path}default.target.wants/{unit_name}",
-        send_event=true,
-        reload=true,
+    symlink = files::Symlink(
+        target=f"{self._systemd_config_dir.path}{unit_name}",
+        path=f"{self._systemd_config_dir.path}default.target.wants/{unit_name}",
         host=host,
+        owner=user,
+        group=user,
         purged=self.state == "removed" or not self.enabled,
         requires=self.requires,
         provides=self.provides,
