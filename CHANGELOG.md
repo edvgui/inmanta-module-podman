@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.7.0 - ?
+## v0.7.0 - 2024-07-07
 
 - Fix service enabling, using full path as symlink target
 - Allow to provide any arg, for any command used to manage pod/containers, on the ContainerLike entity
