@@ -67,7 +67,7 @@ def merge(
 
 @inmanta.resources.resource(
     name="podman::Network",
-    id_attribute="q",
+    id_attribute="uri",
     agent="host.name",
 )
 class NetworkResource(inmanta_plugins.podman.resources.abc.ResourceABC):
@@ -145,10 +145,7 @@ def build_create_command(config: dict) -> list[str]:
 
 
 @inmanta.agent.handler.provider("podman::Network", "")
-class NetworkHandler(
-    inmanta_plugins.podman.resources.abc.HandlerABC[NetworkResource],
-    inmanta.agent.handler.CRUDHandlerGeneric[NetworkResource],
-):
+class NetworkHandler(inmanta_plugins.podman.resources.abc.HandlerABC[NetworkResource]):
     def calculate_diff(
         self,
         ctx: inmanta.agent.handler.HandlerContext,

@@ -33,7 +33,7 @@ import inmanta_plugins.podman.resources.abc
 
 @inmanta.resources.resource(
     name="podman::ImageDiscovery",
-    id_attribute="q",
+    id_attribute="uri",
     agent="host.name",
 )
 class ImageDiscoveryResource(
@@ -45,9 +45,10 @@ class ImageDiscoveryResource(
 
 class DiscoveredImage(pydantic.BaseModel):
     name: str
-    owner: str
+    owner: str | None
     digest: str
     config: dict
+    via: dict
 
 
 @inmanta.agent.handler.provider("podman::ImageDiscovery", "")
@@ -93,13 +94,18 @@ class ImageDiscoveryHandler(
             inmanta.resources.Id(
                 "podman::ImageFromRegistry",
                 discovery_resource.id.agent_name,
-                "q",
-                f"owner={discovery_resource.owner}&name={image_name}",
+                "uri",
+                (
+                    f"{discovery_resource.owner}:{image_name}"
+                    if discovery_resource.owner is not None
+                    else image_name
+                ),
             ).resource_str(): DiscoveredImage(
                 config=image,
                 name=image_name,
                 owner=discovery_resource.owner,
                 digest=image["Digest"],
+                via=discovery_resource.via,
             )
             for image in json.loads(stdout)
             for image_name in image["Names"]

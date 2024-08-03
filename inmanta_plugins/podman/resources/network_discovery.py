@@ -32,7 +32,7 @@ import inmanta_plugins.podman.resources.abc
 
 @inmanta.resources.resource(
     name="podman::NetworkDiscovery",
-    id_attribute="q",
+    id_attribute="uri",
     agent="host.name",
 )
 class NetworkDiscoveryResource(
@@ -45,7 +45,8 @@ class NetworkDiscoveryResource(
 class DiscoveredNetwork(pydantic.BaseModel):
     config: dict
     name: str
-    owner: str
+    owner: str | None
+    via: dict
 
 
 @inmanta.agent.handler.provider("podman::NetworkDiscovery", "")
@@ -87,12 +88,17 @@ class NetworkDiscoveryHandler(
             inmanta.resources.Id(
                 "podman::Network",
                 discovery_resource.id.agent_name,
-                "q",
-                f"owner={discovery_resource.owner}&name={network['name']}",
+                "uri",
+                (
+                    f"{discovery_resource.owner}:{network['name']}"
+                    if discovery_resource.owner is not None
+                    else network["name"]
+                ),
             ).resource_str(): DiscoveredNetwork(
                 config=network,
                 name=network["name"],
                 owner=discovery_resource.owner,
+                via=discovery_resource.via,
             )
             for network in json.loads(stdout)
         }

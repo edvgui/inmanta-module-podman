@@ -16,6 +16,7 @@
     Contact: edvgui@gmail.com
 """
 import std
+import mitogen
 import podman::container_like
 import podman::container
 import podman::network
@@ -31,13 +32,23 @@ entity ResourceABC extends std::PurgeableResource, std::ManagedResource:
     should be unique across all resources types.
 
     :attr owner: The resource owner, on the host where podman is running.
-        This should be an existing user on the machine.
+        This should be an existing user on the machine.  If set to null, will
+        match the user that is used to access the machine.
     :attr name: The resource name
     """
-    string owner = "root"
+    string? owner = null
     string name
 end
 ResourceABC.host [1] -- std::Host
+"""
+The host where the resource should be deployed.
+"""
+
+ResourceABC.via [0:1] -- mitogen::Context
+"""
+Dedicated mitogen context for this resource, to overwrite the one attached
+to the host.
+"""
 
 
 entity Network extends ResourceABC:
@@ -226,6 +237,7 @@ implementation pod_consistency for Container:
     """
     self.host = self.pod.host
     self.owner = self.pod.owner
+    self.via = self.pod.via is defined ? self.pod.via : null
 end
 
 
