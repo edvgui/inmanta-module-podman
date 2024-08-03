@@ -37,7 +37,7 @@ Relation containing all the configuration resources, these are the resources
 making sure that the service ready to be deployed.
 """
 
-SystemdService._systemd_config_dir [1] -- std::Directory
+SystemdService._systemd_config_dir [1] -- files::Directory
 
 
 implementation timer_name for SystemdService:
@@ -65,7 +65,6 @@ implementation service_configuration for SystemdService:
         host=host,
         via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,
-        reload=true,
         # requires=self.requires,  # We don't need this directory to be created after our requires
         provides=self.provides,  # But we need to make sure it is created before our provides
     )
@@ -204,14 +203,10 @@ implementation stop_service for SystemdService:
     user = self._container_like.owner
     host = self._container_like.host
 
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo --login -u {user} -- systemctl --user"
-
     # If the service is active, we stop it
     stop_service = exec::Run(
-        command=shlex_join([self.systemctl_command, "stop", unit_name]),
-        onlyif=shlex_join([self.systemctl_command, "is-active", unit_name]),
+        command=shlex_join([self.systemctl_command, "stop", self.service_name]),
+        onlyif=shlex_join([self.systemctl_command, "is-active", self.service_name]),
         host=host,
         via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,
@@ -224,8 +219,8 @@ implementation stop_service for SystemdService:
     if self.on_calendar is defined:
         # If the timer is active, we stop it
         stop_timer = exec::Run(
-            command=shlex_join([self.systemctl_command, "stop", timer_name]),
-            onlyif=shlex_join([self.systemctl_command, "is-active", timer_name]),
+            command=shlex_join([self.systemctl_command, "stop", self.timer_name]),
+            onlyif=shlex_join([self.systemctl_command, "is-active", self.timer_name]),
             host=host,
             via=self._container_like.via is defined ? self._container_like.via : null,
             send_event=true,
@@ -252,7 +247,7 @@ implementation service_activation for SystemdService:
 
     symlink = files::Symlink(
         target=files::path_join(self._systemd_config_dir.path, unit_name),
-        path=siles::path_join(self._systemd_config_dir.path, "default.target.wants", unit_name),
+        path=files::path_join(self._systemd_config_dir.path, "default.target.wants", unit_name),
         host=host,
         via=self._container_like.via is defined ? self._container_like.via : null,
         owner=user,
