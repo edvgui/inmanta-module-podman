@@ -56,11 +56,12 @@ implementation unit_file for SystemdPod:
 
     # Create the service unit for the pod
     self.unit = files::SystemdUnitFile(
-        path=f"{self._systemd_config_dir.path}{self.service_name}",
+        path=files::path_join(self._systemd_config_dir.path, self.service_name),
         permissions=644,
         owner=user,
         group=user,
         host=host,
+        via=self.pod.via is defined ? self.pod.via : null,
         unit=Unit(
             description=self.description is defined ? self.description : f"Podman {self.service_name}",
             documentation=["https://github.com/edvgui/inmanta-module-podman"],

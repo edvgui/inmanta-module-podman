@@ -16,9 +16,21 @@
     Contact: edvgui@gmail.com
 """
 
+import shlex
 import typing
 
 import inmanta.plugins
+
+
+@inmanta.plugins.plugin()
+def shlex_join(cmd: "string[]") -> "string":
+    """
+    Join all the parts of the command into a string that can safely be parsed
+    by a shell as a valid command.
+
+    :param cmd: All the parts of the command
+    """
+    return shlex.join(cmd)
 
 
 @inmanta.plugins.plugin()
