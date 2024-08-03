@@ -1,7 +1,8 @@
 # Changelog
 
-## v0.7.2 - ?
+## v1.0.0 - ?
 
+- Use mitogen for handler io
 
 ## v0.7.1 - 2024-07-07
 
