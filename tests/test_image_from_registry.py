@@ -28,6 +28,7 @@ def test_model(
         import podman
         import podman::network
         import std
+        import mitogen
 
 
         host = std::Host(
@@ -35,6 +36,7 @@ def test_model(
             remote_agent=true,
             ip="127.0.0.1",
             os=std::linux,
+            via=mitogen::Local(),
         )
 
         podman::ImageFromRegistry(

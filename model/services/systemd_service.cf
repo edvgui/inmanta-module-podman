@@ -72,7 +72,9 @@ implementation service_configuration for SystemdService:
 
     # Run systemctl daemon-reload after any config file change
     reload = exec::Run(
-        command=shlex_join([self.systemctl_command, "daemon-reload"]),
+        command=shlex_join(["echo", "Reloading systemd services"]),
+        onlyif="false",
+        reload=shlex_join([self.systemctl_command, "daemon-reload"]),
         host=host,
         via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,

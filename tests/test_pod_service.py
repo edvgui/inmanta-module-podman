@@ -28,6 +28,8 @@ def test_model(
         import podman::container
         import podman::services
         import std
+        import mitogen
+        import files
 
         user = std::get_env("USER")
 
@@ -37,6 +39,7 @@ def test_model(
             remote_user=user,
             ip="127.0.0.1",
             os=std::linux,
+            via=mitogen::Local(),
         )
 
         pod = podman::Pod(
@@ -80,6 +83,8 @@ def test_model(
             state={repr(state)},
             on_calendar={repr(on_calendar) if on_calendar is not None else "null"},
             enabled=true,
+            systemd_unit_dir=files::path_join("/home", user, ".config/systemd/user"),
+            systemctl_command=["systemctl", "--user"],
         )
     """
 
