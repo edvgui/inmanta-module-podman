@@ -28,7 +28,8 @@ import inmanta.resources
 
 class ResourceABC(
     inmanta.resources.ManagedResource,
-    inmanta_plugins.mitogen.abc.ResourceABC,
+    inmanta.resources.PurgeableResource,
+    inmanta_plugins.mitogen.abc.Resource,
 ):
     fields = (
         "owner",
@@ -52,7 +53,7 @@ class ResourceABC(
 ABC = typing.TypeVar("ABC", bound=ResourceABC)
 
 
-class HandlerABC(inmanta_plugins.mitogen.abc.HandlerABC[ABC]):
+class HandlerABC(inmanta_plugins.mitogen.abc.Handler[ABC]):
     def whoami(self) -> str:
         """
         Check which user is currently executing the commands on the remote host.
