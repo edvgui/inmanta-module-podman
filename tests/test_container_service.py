@@ -25,7 +25,9 @@ def test_model(project: Project, state: str = "stopped") -> None:
         import podman::container_like
         import podman::container
         import podman::services
+        import mitogen
         import std
+        import files
 
         user = std::get_env("USER")
 
@@ -35,6 +37,7 @@ def test_model(project: Project, state: str = "stopped") -> None:
             remote_user=user,
             ip="127.0.0.1",
             os=std::linux,
+            via=mitogen::Local(),
         )
 
         db = podman::Container(
@@ -71,6 +74,8 @@ def test_model(project: Project, state: str = "stopped") -> None:
             container=db,
             state={repr(state)},
             enabled=true,
+            systemd_unit_dir=files::path_join("/home", user, ".config/systemd/user"),
+            systemctl_command=["systemctl", "--user"],
         )
     """
 

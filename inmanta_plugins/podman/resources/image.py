@@ -48,7 +48,7 @@ IR = typing.TypeVar("IR", bound=ImageResource)
 
 class ImageHandler(
     inmanta_plugins.podman.resources.abc.HandlerABC[IR],
-    inmanta.agent.handler.CRUDHandlerGeneric[IR],
+    inmanta.agent.handler.CRUDHandler[IR],
 ):
     def inspect_image(
         self,
@@ -123,7 +123,7 @@ class ImageHandler(
 
 @inmanta.resources.resource(
     name="podman::ImageFromSource",
-    id_attribute="q",
+    id_attribute="uri",
     agent="host.name",
 )
 class ImageFromSourceResource(ImageResource):
@@ -241,7 +241,7 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
 
 @inmanta.resources.resource(
     name="podman::ImageFromRegistry",
-    id_attribute="q",
+    id_attribute="uri",
     agent="host.name",
 )
 class ImageFromRegistryResource(ImageResource):

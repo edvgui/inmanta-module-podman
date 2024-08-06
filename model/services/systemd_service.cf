@@ -37,7 +37,7 @@ Relation containing all the configuration resources, these are the resources
 making sure that the service ready to be deployed.
 """
 
-SystemdService._systemd_config_dir [1] -- std::Directory
+SystemdService._systemd_config_dir [1] -- files::Directory
 
 
 implementation timer_name for SystemdService:
@@ -55,25 +55,16 @@ implementation service_configuration for SystemdService:
     user = self._container_like.owner
     host = self._container_like.host
 
-    systemd_path = self.systemd_unit_dir is defined
-        ? self.systemd_unit_dir
-            : user == "root"
-                ? "/etc/systemd/system/"
-                : f"/home/{user}/.config/systemd/user/"
-
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo --login -u {user} -- systemctl --user"
-
     # Make sure that the systemd directory exists
-    self._systemd_config_dir = std::Directory(
-        path=systemd_path,
-        mode=755,
+    self._systemd_config_dir = files::Directory(
+        path=self.systemd_unit_dir,
+        permissions=755,
         owner=user,
         group=user,
+        create_parents=true,
         host=host,
+        via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,
-        reload=true,
         # requires=self.requires,  # We don't need this directory to be created after our requires
         provides=self.provides,  # But we need to make sure it is created before our provides
     )
@@ -81,8 +72,11 @@ implementation service_configuration for SystemdService:
 
     # Run systemctl daemon-reload after any config file change
     reload = exec::Run(
-        command=f"{systemctl_command} daemon-reload",
+        command=shlex_join(["echo", "Reloading systemd services"]),
+        onlyif="false",
+        reload=shlex_join([self.systemctl_command, "daemon-reload"]),
         host=host,
+        via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,
         requires=[
             self.requires,  # We don't want to run this command before any of our requires
@@ -124,11 +118,12 @@ implementation service_timer for SystemdService:
 
     if self.on_calendar is defined:
         self.timer = files::SystemdUnitFile(
-            path=f"{self._systemd_config_dir.path}{self.timer_name}",
+            path=files::path_join(self._systemd_config_dir.path, self.timer_name),
             permissions=644,
             owner=user,
             group=user,
             host=host,
+            via=self._container_like.via is defined ? self._container_like.via : null,
             unit=Unit(
                 description=self.description is defined ? self.description : f"Podman {self.timer_name}",
                 documentation=["https://github.com/edvgui/inmanta-module-podman"],
@@ -165,15 +160,12 @@ implementation run_service for SystemdService:
     # the service itself
     unit_name = self.on_calendar is defined ? self.timer_name : self.service_name
 
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo --login -u {user} -- systemctl --user"
-
     # If the service is not active, we start it
     self.runtime_resources = exec::Run(
-        command=f"{systemctl_command} start {unit_name}",
-        unless=exec::in_shell(f"{systemctl_command} show {unit_name} --property=ActiveState | grep ActiveState=active"),
+        command=shlex_join([self.systemctl_command, "start", unit_name]),
+        unless=shlex_join([self.systemctl_command, "is-active", unit_name]),
         host=host,
+        via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
@@ -193,14 +185,11 @@ implementation restart_service for SystemdService:
     # the service itself
     unit_name = self.on_calendar is defined ? self.timer_name : self.service_name
 
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo --login -u {user} -- systemctl --user"
-
     # If the service is not active, we start it
     self.runtime_resources += exec::Run(
-        command=f"{systemctl_command} restart {unit_name}",
+        command=shlex_join([self.systemctl_command, "restart", unit_name]),
         host=host,
+        via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
@@ -216,15 +205,12 @@ implementation stop_service for SystemdService:
     user = self._container_like.owner
     host = self._container_like.host
 
-    systemctl_command = user == "root"
-        ? "systemctl"
-        : f"sudo --login -u {user} -- systemctl --user"
-
     # If the service is active, we stop it
     stop_service = exec::Run(
-        command=f"{systemctl_command} stop {self.service_name}",
-        onlyif=exec::in_shell(f"{systemctl_command} show {self.service_name} --property=ActiveState | grep ActiveState=active"),
+        command=shlex_join([self.systemctl_command, "stop", self.service_name]),
+        onlyif=shlex_join([self.systemctl_command, "is-active", self.service_name]),
         host=host,
+        via=self._container_like.via is defined ? self._container_like.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
@@ -235,9 +221,10 @@ implementation stop_service for SystemdService:
     if self.on_calendar is defined:
         # If the timer is active, we stop it
         stop_timer = exec::Run(
-            command=f"{systemctl_command} stop {self.timer_name}",
-            onlyif=exec::in_shell(f"{systemctl_command} show {self.timer_name} --property=ActiveState | grep ActiveState=active"),
+            command=shlex_join([self.systemctl_command, "stop", self.timer_name]),
+            onlyif=shlex_join([self.systemctl_command, "is-active", self.timer_name]),
             host=host,
+            via=self._container_like.via is defined ? self._container_like.via : null,
             send_event=true,
             reload="true",  # Dummy command, we don't want to execute our command twice
             requires=self.requires,
@@ -261,9 +248,10 @@ implementation service_activation for SystemdService:
     unit_name = self.on_calendar is defined ? self.timer_name : self.service_name
 
     symlink = files::Symlink(
-        target=f"{self._systemd_config_dir.path}{unit_name}",
-        path=f"{self._systemd_config_dir.path}default.target.wants/{unit_name}",
+        target=files::path_join(self._systemd_config_dir.path, unit_name),
+        path=files::path_join(self._systemd_config_dir.path, "default.target.wants", unit_name),
         host=host,
+        via=self._container_like.via is defined ? self._container_like.via : null,
         owner=user,
         group=user,
         purged=self.state == "removed" or not self.enabled,
