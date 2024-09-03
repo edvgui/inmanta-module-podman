@@ -70,7 +70,10 @@ def merge(
     id_attribute="uri",
     agent="host.name",
 )
-class NetworkResource(inmanta_plugins.podman.resources.abc.ResourceABC):
+class NetworkResource(
+    inmanta_plugins.podman.resources.abc.ResourceABC,
+    inmanta.resources.PurgeableResource,
+):
     fields = ("config",)
     config: dict
 

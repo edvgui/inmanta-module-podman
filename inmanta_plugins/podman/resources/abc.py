@@ -28,7 +28,6 @@ import inmanta.resources
 
 class ResourceABC(
     inmanta.resources.ManagedResource,
-    inmanta.resources.PurgeableResource,
     inmanta_plugins.mitogen.abc.Resource,
 ):
     fields = (
