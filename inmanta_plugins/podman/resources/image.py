@@ -38,7 +38,10 @@ def valid_digest(digest: str, repo_digests: list[str]) -> bool:
     return digest in [repo_digest.split("@")[-1] for repo_digest in repo_digests]
 
 
-class ImageResource(inmanta_plugins.podman.resources.abc.ResourceABC):
+class ImageResource(
+    inmanta_plugins.podman.resources.abc.ResourceABC,
+    inmanta.resources.PurgeableResource,
+):
     fields = ("digest",)
     digest: str | None
 
