@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.0.2 - ?
+
+
 ## v1.0.1 - 2024-09-29
 
 - Bump dependencies
