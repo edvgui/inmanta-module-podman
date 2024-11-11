@@ -97,7 +97,10 @@ def test_deploy(project: Project) -> None:
             {
                 r: project.dryrun(r, run_as_root=False)
                 for r in project.resources.values()
-                if not r.is_type("std::AgentConfig")
+                if (
+                    not r.is_type("std::AgentConfig")
+                    and not (r.is_type("exec::Run") and r.reload_only)
+                )
             }
         )
         dry_run_result.assert_has_no_changes()
