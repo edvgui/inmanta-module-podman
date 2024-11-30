@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.0.2 - ?
+## v1.1.0 - ?
 
+- Add listen_stream to container service for socket activation support
 
 ## v1.0.1 - 2024-09-29
 
