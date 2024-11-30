@@ -70,6 +70,7 @@ implementation unit_file for SystemdContainer:
             wants=[
                 "network-online.target",
                 self.on_calendar is defined ? [self.timer_name] : [],
+                self.listen_stream is defined ? [self.socket_name] : [],
             ],
             requires_mounts_for=["%t/containers"],
             binds_to=pod_service is defined
@@ -100,13 +101,15 @@ implementation unit_file for SystemdContainer:
                 cidfile="%t/%n.ctr-id",
                 time=10,
             ),
-            exec_stop_post=podman::container_rm(
-                self.container,
-                force=true,
-                ignore=true,
-                time=10,
-                cidfile="%t/%n.ctr-id",
-            ),
+            exec_stop_post=[
+                podman::container_rm(
+                    self.container,
+                    force=true,
+                    ignore=true,
+                    time=10,
+                    cidfile="%t/%n.ctr-id",
+                ),
+            ],
             type=self.on_calendar is defined ? "exec" : "notify",
             notify_access="all",
         ),

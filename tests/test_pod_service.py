@@ -100,14 +100,21 @@ def test_deploy(project: Project) -> None:
             test_model(project, state=state, on_calendar=on_calendar)
 
             # Deploy all the resources
-            project.deploy_all().assert_all()
+            project.deploy_all(
+                exclude_all=[
+                    "std::AgentConfig",
+                    "exec::Run",
+                ],
+            ).assert_all()
 
             # Assert that the desired state is stable
             dry_run_result = Result(
                 {
                     r: project.dryrun(r, run_as_root=False)
                     for r in project.resources.values()
-                    if not r.is_type("std::AgentConfig")
+                    if (
+                        not r.is_type("std::AgentConfig") and not r.is_type("exec::Run")
+                    )
                 }
             )
             dry_run_result.assert_has_no_changes()

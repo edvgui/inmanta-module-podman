@@ -47,6 +47,10 @@ entity SystemdService:
     :attr on_calendar: When specified, also configure a timer unit, that will trigger the
         service unit for matching calendar times.  The expression in this field should be
         a valid according to the systemd.timer (5) specifications.
+    :attr listen_stream: When specified, also configure a socket unit that listens on the
+        provided streams, and starts the service when receiving incoming traffic.
+        The streams defined will be automatically available to the container running in
+        the service.
     :attr systemd_unit_dir: The directory in which the unit should be created.
     :attr systemctl_command: The systemctl command to run for this service, defaults to
         ["systemctl"] but can be set to ["systemctl", "--user"] for unprivileged units.
@@ -56,12 +60,19 @@ entity SystemdService:
     :attr service_name: Attribute used internally to save the name of the top-level
         service to manage.
     :attr timer_name: Attribute used internally to save the name of the top-level
-        timer to manager.  It is derived from the service_name attribute, swaping its
+        timer to manage.  It is derived from the service_name attribute, swaping its
         .service suffix for a .timer suffix.
+    :attr socket_name: Attribute used internally to save the name of the top-level
+        socket to manage.  It is derived from the service_name attribute, swaping its
+        .service suffix for a .socket suffix.
+    :attr unit_name: The name of the main unit that should be enabled/disabled and
+        started/stopped.  When a timer is configured it will be the timer, when a socket
+        is configured, it will be the socket.  Otherwise it will be the service.
     """
     string? name = null
     string? description = null
     string? on_calendar = null
+    string[]? listen_stream = null
     string systemd_unit_dir = "/etc/systemd/system"
     string[] systemctl_command = ["systemctl"]
     service_state_t state
@@ -69,11 +80,14 @@ entity SystemdService:
 
     string service_name
     string timer_name
+    string socket_name
+    string unit_name
 end
 SystemdService._container_like [1] -- podman::ContainerLike._systemd_service [0:1]
 SystemdService.resources [0:] -- std::Resource
 SystemdService.unit [1] -- files::SystemdUnitFile
 SystemdService.timer [0:1] -- files::SystemdUnitFile
+SystemdService.socket [0:1] -- files::SystemdUnitFile
 
 
 entity SystemdPod extends SystemdService:
