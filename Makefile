@@ -10,7 +10,7 @@ test_env_vars:
 
 .PHONY: install
 install:
-	pip install -U setuptools pip wheel
+	pip install -U pip wheel
 	pip install -U --upgrade-strategy=eager -c requirements.txt -r requirements.dev.txt -e .
 
 .PHONY: format

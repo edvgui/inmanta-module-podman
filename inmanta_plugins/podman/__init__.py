@@ -23,7 +23,18 @@ import inmanta.plugins
 
 
 @inmanta.plugins.plugin()
-def shlex_join(cmd: "string[]") -> "string":
+def removesuffix(s: "string", suffix: "string") -> "string":  # type: ignore
+    """
+    Remove the given suffix from the input string.
+
+    :param s: The string that should remove the suffix from.
+    :param suffix: The suffix to remove from the string, if it has it.
+    """
+    return str(s).removesuffix(suffix)
+
+
+@inmanta.plugins.plugin()
+def shlex_join(cmd: "string[]") -> "string":  # type: ignore
     """
     Join all the parts of the command into a string that can safely be parsed
     by a shell as a valid command.
