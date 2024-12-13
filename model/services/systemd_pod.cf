@@ -74,6 +74,10 @@ implementation unit_file for SystemdPod:
                 self.on_calendar is defined ? [self.timer_name] : [],
                 self.listen_stream is defined ? [self.socket_name] : [],
             ],
+            part_of=[
+                self.on_calendar is defined ? [self.timer_name] : [],
+                self.listen_stream is defined ? [self.socket_name] : [],
+            ],
         ),
         service=Service(
             environment={"PODMAN_SYSTEMD_UNIT": "%n"},

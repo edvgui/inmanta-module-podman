@@ -76,9 +76,14 @@ implementation unit_file for SystemdContainer:
             binds_to=pod_service is defined
                 ? [pod_service.service_name]
                 : [],
-            after=pod_service is defined
-                ? [pod_service.service_name, "network-online.service"]
-                : ["network-online.service"],
+            after=[
+                pod_service is defined ? [pod_service.service_name] : [],
+                "network-online.service",
+            ],
+            part_of=[
+                self.on_calendar is defined ? [self.timer_name] : [],
+                self.listen_stream is defined ? [self.socket_name] : [],
+            ],
         ),
         service=Service(
             environment={"PODMAN_SYSTEMD_UNIT": "%n"},
