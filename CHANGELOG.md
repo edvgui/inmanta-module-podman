@@ -2,6 +2,7 @@
 
 ## v1.1.1 - ?
 
+- Fix usage of labels on container/pod resources
 
 ## v1.1.0 - 2024-12-13
 
