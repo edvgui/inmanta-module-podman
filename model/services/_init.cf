@@ -16,6 +16,7 @@
     Contact: edvgui@gmail.com
 """
 import podman
+import podman::services::systemd_auto_update
 import podman::services::systemd_container
 import podman::services::systemd_pod
 import podman::services::systemd_service
@@ -83,7 +84,7 @@ entity SystemdService:
     string socket_name
     string unit_name
 end
-SystemdService._container_like [1] -- podman::ContainerLike._systemd_service [0:1]
+SystemdService._resource [1] -- podman::ResourceABC._systemd_service [0:1]
 SystemdService.resources [0:] -- std::Resource
 SystemdService.unit [1] -- files::SystemdUnitFile
 SystemdService.timer [0:1] -- files::SystemdUnitFile
@@ -105,3 +106,12 @@ entity SystemdContainer extends SystemdService:
     """
 end
 SystemdContainer.container [1] -- podman::Container
+
+
+entity SystemdAutoUpdate extends SystemdService:
+    """
+    Systemd service that manage the auto-update functionality of podman.
+    """
+    string? on_calendar = "daily"
+end
+SystemdAutoUpdate.auto_update [1] -- podman::AutoUpdate

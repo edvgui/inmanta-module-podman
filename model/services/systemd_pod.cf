@@ -22,11 +22,11 @@ import files
 import files::systemd_unit
 
 
-implementation container_like for SystemdPod:
+implementation resource for SystemdPod:
     """
     Setup the container like relation as the pod attached to this service.
     """
-    self._container_like = self.pod
+    self._resource = self.pod
 end
 
 
@@ -126,4 +126,4 @@ implementation unit_file for SystemdPod:
 end
 
 
-implement SystemdPod using container_like, service_name, unit_file, parents
+implement SystemdPod using resource, service_name, unit_file, parents

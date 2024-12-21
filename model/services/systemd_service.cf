@@ -72,8 +72,8 @@ implementation service_configuration for SystemdService:
     """
     Deploy and cleanup all the configuration files required by our service.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     # Make sure that the systemd directory exists
     self._systemd_config_dir = files::Directory(
@@ -83,7 +83,7 @@ implementation service_configuration for SystemdService:
         group=user,
         create_parents=true,
         host=host,
-        via=self._container_like.via is defined ? self._container_like.via : null,
+        via=self._resource.via is defined ? self._resource.via : null,
         send_event=true,
         # requires=self.requires,  # We don't need this directory to be created after our requires
         provides=self.provides,  # But we need to make sure it is created before our provides
@@ -95,7 +95,7 @@ implementation service_configuration for SystemdService:
         command=shlex_join([self.systemctl_command, "daemon-reload"]),
         reload_only=true,
         host=host,
-        via=self._container_like.via is defined ? self._container_like.via : null,
+        via=self._resource.via is defined ? self._resource.via : null,
         send_event=true,
         requires=[
             self.requires,  # We don't want to run this command before any of our requires
@@ -132,8 +132,8 @@ implementation service_timer for SystemdService:
     """
     Setup a timer file when the service should be executed periodically.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     if self.on_calendar is defined:
         self.timer = files::SystemdUnitFile(
@@ -142,7 +142,7 @@ implementation service_timer for SystemdService:
             owner=user,
             group=user,
             host=host,
-            via=self._container_like.via is defined ? self._container_like.via : null,
+            via=self._resource.via is defined ? self._resource.via : null,
             unit=Unit(
                 description=self.description is defined ? self.description : f"Podman {self.timer_name}",
                 documentation=["https://github.com/edvgui/inmanta-module-podman"],
@@ -172,8 +172,8 @@ implementation service_socket for SystemdService:
     """
     Setup a timer file when the service should be executed periodically.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     if self.listen_stream is defined:
         self.socket = files::SystemdUnitFile(
@@ -182,7 +182,7 @@ implementation service_socket for SystemdService:
             owner=user,
             group=user,
             host=host,
-            via=self._container_like.via is defined ? self._container_like.via : null,
+            via=self._resource.via is defined ? self._resource.via : null,
             unit=Unit(
                 description=self.description is defined ? self.description : f"Podman {self.socket_name}",
                 documentation=["https://github.com/edvgui/inmanta-module-podman"],
@@ -212,15 +212,15 @@ implementation run_service for SystemdService:
     """
     Make sure that the service is running.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     # If the service is not active, we start it
     self.runtime_resources = exec::Run(
         command=shlex_join([self.systemctl_command, "start", self.unit_name]),
         unless=shlex_join([self.systemctl_command, "is-active", self.unit_name]),
         host=host,
-        via=self._container_like.via is defined ? self._container_like.via : null,
+        via=self._resource.via is defined ? self._resource.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
@@ -233,14 +233,14 @@ implementation restart_service for SystemdService:
     """
     Make sure the the service is restarted.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     # If the service is not active, we start it
     self.runtime_resources += exec::Run(
         command=shlex_join([self.systemctl_command, "restart", self.unit_name]),
         host=host,
-        via=self._container_like.via is defined ? self._container_like.via : null,
+        via=self._resource.via is defined ? self._resource.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
@@ -253,15 +253,15 @@ implementation stop_service for SystemdService:
     """
     Make sure that the service is not running.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     # If the service is active, we stop it
     self.runtime_resources += exec::Run(
         command=shlex_join([self.systemctl_command, "stop", self.unit_name]),
         onlyif=shlex_join([self.systemctl_command, "is-active", self.unit_name]),
         host=host,
-        via=self._container_like.via is defined ? self._container_like.via : null,
+        via=self._resource.via is defined ? self._resource.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
@@ -274,15 +274,15 @@ implementation enable_service for SystemdService:
     """
     Make sure that the service is enabled.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     # If the service is not enabled, we enable it
     self.runtime_resources = exec::Run(
         command=shlex_join([self.systemctl_command, "enable", self.unit_name]),
         unless=shlex_join([self.systemctl_command, "is-enabled", self.unit_name]),
         host=host,
-        via=self._container_like.via is defined ? self._container_like.via : null,
+        via=self._resource.via is defined ? self._resource.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
@@ -295,15 +295,15 @@ implementation disable_service for SystemdService:
     """
     Make sure that the service is disabled.
     """
-    user = self._container_like.owner
-    host = self._container_like.host
+    user = self._resource.owner
+    host = self._resource.host
 
     # If the service is enabled, we disable it
     self.runtime_resources = exec::Run(
         command=shlex_join([self.systemctl_command, "disable", self.unit_name]),
         onlyif=shlex_join([self.systemctl_command, "is-enabled", self.unit_name]),
         host=host,
-        via=self._container_like.via is defined ? self._container_like.via : null,
+        via=self._resource.via is defined ? self._resource.via : null,
         send_event=true,
         reload="true",  # Dummy command, we don't want to execute our command twice
         requires=self.requires,
