@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.2.1 - ?
+
+
 ## v1.2.0 - 2024-12-21
 
 - Add support for configuring podman-auto-update service
