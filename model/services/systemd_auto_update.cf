@@ -1,0 +1,90 @@
+"""
+    Copyright 2023 Guillaume Everarts de Velp
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+    Contact: edvgui@gmail.com
+"""
+import std
+import exec
+import podman
+import files
+import files::systemd_unit
+
+
+implementation resource for SystemdAutoUpdate:
+    """
+    Setup the container like relation as the pod attached to this service.
+    """
+    self._resource = self.auto_update
+end
+
+
+implementation service_name for SystemdAutoUpdate:
+    """
+    Setup the service name for the container, using the container name.
+    """
+    self.service_name = self.name is defined ? self.name : f"podman-auto-update.service"
+end
+
+
+implementation unit_file for SystemdAutoUpdate:
+    """
+    Deploy and cleanup all the configuration files required by our service.
+    """
+    user = self.auto_update.owner
+    host = self.auto_update.host
+
+    # Create the service unit for the pod
+    self.unit = files::SystemdUnitFile(
+        path=files::path_join(self._systemd_config_dir.path, self.service_name),
+        permissions=644,
+        owner=user,
+        group=user,
+        host=host,
+        via=self.auto_update.via is defined ? self.auto_update.via : null,
+        unit=Unit(
+            description=self.description is defined ? self.description : f"Podman auto-update service",
+            documentation=["https://github.com/edvgui/inmanta-module-podman"],
+            wants=[
+                "network-online.target",
+                self.on_calendar is defined ? [self.timer_name] : [],
+            ],
+            after=[
+                "network-online.service",
+            ],
+            part_of=[
+                self.on_calendar is defined ? [self.timer_name] : [],
+            ],
+        ),
+        service=Service(
+            exec_start=auto_update(self.auto_update),
+            exec_start_post=[
+                "/usr/bin/podman image prune -f",
+            ],
+            type="oneshot",
+        ),
+        install=Install(
+            wanted_by=["default.target"],
+        ),
+        send_event=true,
+        purged=self.state == "removed",
+        requires=self.requires,
+        provides=self.provides,
+    )
+    self.unit.requires += self._systemd_config_dir
+    self.file_resources += self.unit
+end
+
+
+implement SystemdAutoUpdate using resource, service_name, unit_file, parents

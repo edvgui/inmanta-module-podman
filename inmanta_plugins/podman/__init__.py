@@ -358,3 +358,18 @@ def pod_stop(
         pod.name if pod_id_file is None else None,
     ]
     return " ".join(i for i in cmd if i is not None)
+
+
+@inmanta.plugins.plugin()
+def auto_update(auto_update: "podman::AutoUpdate") -> "string":  # type: ignore
+    """
+    Create the podman auto-update command for the given auto update entity.
+    """
+    cmd: list[str | None] = [
+        "/usr/bin/podman",
+        "auto-update",
+        option("authfile", auto_update.authfile),
+        option("rollback", auto_update.rollback),
+        option("tls-verify", auto_update.tls_verify),
+    ]
+    return " ".join(i for i in cmd if i is not None)

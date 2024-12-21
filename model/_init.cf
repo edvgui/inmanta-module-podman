@@ -219,6 +219,23 @@ entity ImageFromRegistry extends Image:
 end
 
 
+entity AutoUpdate extends ResourceABC:
+    """
+    Configure podman auto-update service for the given user.
+
+    :attr authfile: Path to the authentication file. Use REGISTRY_AUTH_FILE environment variable to override
+    :attr rollback: Rollback to previous image if update fails (default true)
+    :attr tls_verify: Require HTTPS and verify certificates when contacting registries (default true)
+    """
+    string name = "auto-update"
+    string? authfile = null
+    bool? rollback = null
+    bool? tls_verify = null
+end
+
+index AutoUpdate(host, owner, name)
+
+
 implementation require_agent_config for ResourceABC:
     """
     Resources in this module expect the agent name to match the host name.
@@ -252,3 +269,4 @@ implement Image using parents
 implement ImageDiscovery using parents
 implement ImageFromRegistry using parents
 implement ImageFromSource using parents
+implement AutoUpdate using parents
