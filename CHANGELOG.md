@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.1.1 - ?
+## v1.2.0 - ?
 
+- Add support for configuring podman-auto-update service
 - Fix usage of labels on container/pod resources
 
 ## v1.1.0 - 2024-12-13
