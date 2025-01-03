@@ -101,10 +101,12 @@ entity ContainerLike extends ResourceABC:
     :attr hostname: Set a hostname to the container.
     :attr labels: Add metadata to a container.
     :attr no_hosts: Do not create /etc/hosts within the container, instead use the version from the image
+    :attr userns: Set the user namespace mode for the container.
     """
     string? hostname = null
     dict labels = {}
     bool no_hosts = false
+    string? userns = null
 end
 ContainerLike.networks [0:] -- podman::container_like::Network.container_like [1]
 """Set the network mode for the container."""
