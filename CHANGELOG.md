@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.2.1 - ?
+## v1.3.0 - ?
 
+- Add userns option support to container-like entities
 
 ## v1.2.0 - 2024-12-21
 
