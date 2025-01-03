@@ -193,6 +193,7 @@ def container_run(
         *{f"--label={k}={v}" for k, v in container.labels.items()},
         *options("uidmap", container.uidmap),
         *options("gidmap", container.gidmap),
+        option("userns", container.userns),
         f"--name={container.name}",
         *options("volume", container.volumes),
         *[f"--env={k}={v}" for k, v in container.env.items()],
@@ -269,6 +270,7 @@ def pod_create(
         *{f"--label={k}={v}" for k, v in pod.labels.items()},
         *options("uidmap", pod.uidmap),
         *options("gidmap", pod.gidmap),
+        option("userns", pod.userns),
         *extra_args("podman-pod-create", pod.extra_args),
         f"--name={pod.name}",
     ]
