@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.3.0 - ?
+## v1.3.0 - 2025-01-03
 
 - Add userns option support to container-like entities
 
