@@ -21,6 +21,8 @@ import podman::container_like
 
 entity FullyMappedHostUser:
     """
+    DEPRECATED: Use userns="keep-id:uid={container_id},gid={container_id}" instead
+
     Create the id mappings to map the current host user (subid 0) to
     a given id in the container.  It will make sure that the full range
     of container ids is mapped to the container.
