@@ -41,7 +41,7 @@ def test_model(
 
         podman::ImageFromRegistry(
             host=host,
-            name="docker.io/library/alpine:latest",
+            name="ghcr.io/linuxcontainers/alpine:latest",
             digest={repr(digest) if digest is not None else "null"},
             purged={json.dumps(purged)},
         )

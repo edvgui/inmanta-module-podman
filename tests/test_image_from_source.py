@@ -41,7 +41,7 @@ def test_model(project: Project, purged: bool = False) -> None:
 
         podman::ImageFromSource(
             host=host,
-            name="docker.io/library/alpine:latest",
+            name="ghcr.io/linuxcontainers/alpine:latest",
             context="https://github.com/alpinelinux/docker-alpine.git",
             file="Dockerfile",
             purged={json.dumps(purged)},
