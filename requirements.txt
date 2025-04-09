@@ -1,4 +1,4 @@
 inmanta-module-exec==2.1.0
-inmanta-module-std==8.3.1
+inmanta-module-std==8.3.2
 inmanta-module-files==2.1.1
 inmanta-module-mitogen==0.2.3
