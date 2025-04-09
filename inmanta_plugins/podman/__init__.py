@@ -45,22 +45,6 @@ def shlex_join(cmd: list[str]) -> str:
 
 
 @inmanta.plugins.plugin()
-def plus(a: int, b: int) -> int:
-    """
-    Will be replaced by https://github.com/inmanta/inmanta-core/issues/1799
-    """
-    return a + b
-
-
-@inmanta.plugins.plugin()
-def minus(a: int, b: int) -> int:
-    """
-    Will be replaced by https://github.com/inmanta/inmanta-core/issues/1799
-    """
-    return a - b
-
-
-@inmanta.plugins.plugin()
 def inline_options(options: dict) -> str:
     """
     Convert a dict of options into a comma-separated list of key=value pairs.
