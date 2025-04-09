@@ -23,18 +23,18 @@ import inmanta.plugins
 
 
 @inmanta.plugins.plugin()
-def removesuffix(s: "string", suffix: "string") -> "string":  # type: ignore
+def removesuffix(s: str, suffix: str) -> str:
     """
     Remove the given suffix from the input string.
 
     :param s: The string that should remove the suffix from.
     :param suffix: The suffix to remove from the string, if it has it.
     """
-    return str(s).removesuffix(suffix)
+    return s.removesuffix(suffix)
 
 
 @inmanta.plugins.plugin()
-def shlex_join(cmd: "string[]") -> "string":  # type: ignore
+def shlex_join(cmd: list[str]) -> str:
     """
     Join all the parts of the command into a string that can safely be parsed
     by a shell as a valid command.
@@ -45,23 +45,7 @@ def shlex_join(cmd: "string[]") -> "string":  # type: ignore
 
 
 @inmanta.plugins.plugin()
-def plus(a: "int", b: "int") -> "int":
-    """
-    Will be replaced by https://github.com/inmanta/inmanta-core/issues/1799
-    """
-    return a + b
-
-
-@inmanta.plugins.plugin()
-def minus(a: "int", b: "int") -> "int":
-    """
-    Will be replaced by https://github.com/inmanta/inmanta-core/issues/1799
-    """
-    return a - b
-
-
-@inmanta.plugins.plugin()
-def inline_options(options: "dict") -> "string":  # type: ignore
+def inline_options(options: dict) -> str:
     """
     Convert a dict of options into a comma-separated list of key=value pairs.
 
@@ -71,7 +55,7 @@ def inline_options(options: "dict") -> "string":  # type: ignore
 
 
 @inmanta.plugins.plugin()
-def join(parts: "string[]", *, separator: "string") -> "string":  # type: ignore
+def join(parts: list[str], *, separator: str) -> str:
     """
     Join all the elements in the list together, use the separator in
     between each joined part.
@@ -123,13 +107,15 @@ def extra_args(command: str, args: typing.Sequence[object]) -> typing.Sequence[s
 
 @inmanta.plugins.plugin()
 def container_rm(
-    container: "podman::Container",  # type: ignore
+    container: typing.Annotated[
+        typing.Any, inmanta.plugins.ModelType["podman::Container"]
+    ],
     *,
-    force: "bool" = False,
-    ignore: "bool" = False,
-    cidfile: "string?" = None,  # type: ignore
-    time: "int?" = None,  # type: ignore
-) -> "string":  # type: ignore
+    force: bool = False,
+    ignore: bool = False,
+    cidfile: str | None = None,
+    time: int | None = None,
+) -> str:
     """
     Create the rm command required to cleanup a container.
 
@@ -155,15 +141,17 @@ def container_rm(
 
 @inmanta.plugins.plugin()
 def container_run(
-    container: "podman::Container",  # type: ignore
+    container: typing.Annotated[
+        typing.Any, inmanta.plugins.ModelType["podman::Container"]
+    ],
     *,
-    cidfile: "string?" = None,  # type: ignore
-    cgroups: "string?" = None,  # type: ignore
-    pod_id_file: "string?" = None,  # type: ignore
-    sdnotify: "string?" = None,  # type: ignore
-    detach: "bool" = False,
-    replace: "bool" = False,
-) -> "string":  # type: ignore
+    cidfile: str | None = None,
+    cgroups: str | None = None,
+    pod_id_file: str | None = None,
+    sdnotify: str | None = None,
+    detach: bool = False,
+    replace: bool = False,
+) -> str:
     """
     Create the run command required to start the given container.
 
@@ -209,12 +197,14 @@ def container_run(
 
 @inmanta.plugins.plugin()
 def container_stop(
-    container: "podman::Container",  # type: ignore
+    container: typing.Annotated[
+        typing.Any, inmanta.plugins.ModelType["podman::Container"]
+    ],
     *,
-    ignore: "bool" = False,
-    cidfile: "string?" = None,  # type: ignore
-    time: "int?" = None,  # type: ignore
-) -> "string":  # type: ignore
+    ignore: bool = False,
+    cidfile: str | None = None,
+    time: int | None = None,
+) -> str:
     """
     Create the stop command required to stop a container.
 
@@ -238,13 +228,13 @@ def container_stop(
 
 @inmanta.plugins.plugin()
 def pod_create(
-    pod: "podman::Pod",  # type: ignore
+    pod: typing.Annotated[typing.Any, inmanta.plugins.ModelType["podman::Pod"]],
     *,
-    infra_conmon_pidfile: "string?" = None,  # type: ignore
-    pod_id_file: "string?" = None,  # type: ignore
-    exit_policy: "string?" = None,  # type: ignore
-    replace: "bool" = False,
-) -> "string":  # type: ignore
+    infra_conmon_pidfile: str | None = None,
+    pod_id_file: str | None = None,
+    exit_policy: str | None = None,
+    replace: bool = False,
+) -> str:
     """
     Create the create command required to create the given pod.
 
@@ -279,13 +269,13 @@ def pod_create(
 
 @inmanta.plugins.plugin()
 def pod_rm(
-    pod: "podman::Pod",  # type: ignore
+    pod: typing.Annotated[typing.Any, inmanta.plugins.ModelType["podman::Pod"]],
     *,
-    force: "bool" = False,
-    ignore: "bool" = False,
-    pod_id_file: "string?" = None,  # type: ignore
-    time: "int?" = None,  # type: ignore
-) -> "string":  # type: ignore
+    force: bool = False,
+    ignore: bool = False,
+    pod_id_file: str | None = None,
+    time: int | None = None,
+) -> str:
     """
     Create the rm command required to cleanup a pod.
 
@@ -312,10 +302,10 @@ def pod_rm(
 
 @inmanta.plugins.plugin()
 def pod_start(
-    pod: "podman::Pod",  # type: ignore
+    pod: typing.Annotated[typing.Any, inmanta.plugins.ModelType["podman::Pod"]],
     *,
-    pod_id_file: "string?" = None,  # type: ignore
-) -> "string":  # type: ignore
+    pod_id_file: str | None = None,
+) -> str:
     """
     Create the start command required to start a pod.
 
@@ -335,12 +325,12 @@ def pod_start(
 
 @inmanta.plugins.plugin()
 def pod_stop(
-    pod: "podman::Pod",  # type: ignore
+    pod: typing.Annotated[typing.Any, inmanta.plugins.ModelType["podman::Pod"]],
     *,
-    ignore: "bool" = False,
-    pod_id_file: "string?" = None,  # type: ignore
-    time: "int?" = None,  # type: ignore
-) -> "string":  # type: ignore
+    ignore: bool = False,
+    pod_id_file: str | None = None,
+    time: int | None = None,
+) -> str:
     """
     Create the stop command required to stop a pod.
 
@@ -363,7 +353,11 @@ def pod_stop(
 
 
 @inmanta.plugins.plugin()
-def auto_update(auto_update: "podman::AutoUpdate") -> "string":  # type: ignore
+def auto_update(
+    auto_update: typing.Annotated[
+        typing.Any, inmanta.plugins.ModelType["podman::AutoUpdate"]
+    ],
+) -> str:
     """
     Create the podman auto-update command for the given auto update entity.
     """
