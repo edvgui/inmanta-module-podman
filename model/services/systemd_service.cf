@@ -193,7 +193,7 @@ implementation service_socket for SystemdService:
                 service=self.service_name,
             ),
             install=Install(
-                wanted_by=["socket.target"],
+                wanted_by=["sockets.target"],
             ),
             send_event=true,
             purged=self.state == "removed",

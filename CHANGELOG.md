@@ -2,6 +2,7 @@
 
 ## v1.4.0 - ?
 
+- Fix socket unit file install target
 - Use python type annotations in plugins
 
 ## v1.3.0 - 2025-01-03
