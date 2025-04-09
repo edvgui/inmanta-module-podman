@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.3.1 - ?
+## v1.4.0 - ?
 
+- Use python type annotations in plugins
 
 ## v1.3.0 - 2025-01-03
 
