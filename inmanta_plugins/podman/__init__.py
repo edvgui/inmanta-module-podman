@@ -30,7 +30,7 @@ def removesuffix(s: str, suffix: str) -> str:
     :param s: The string that should remove the suffix from.
     :param suffix: The suffix to remove from the string, if it has it.
     """
-    return str(s).removesuffix(suffix)
+    return s.removesuffix(suffix)
 
 
 @inmanta.plugins.plugin()
