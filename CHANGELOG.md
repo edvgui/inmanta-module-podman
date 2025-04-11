@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.4.1 - ?
+
+
 ## v1.4.0 - 2025-04-11
 
 - Fix socket unit file install target
