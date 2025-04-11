@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.4.0 - ?
+## v1.4.0 - 2025-04-11
 
 - Fix socket unit file install target
 - Use python type annotations in plugins
