@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.4.2 - ?
+
+
 ## v1.4.1 - 2025-04-20
 
 - Make sure container and pod units wait on podman-user-wait-network-online.service when running rootless.
