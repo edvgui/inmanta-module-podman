@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.4.2 - ?
+## v1.5.0 - ?
 
+- Allow to manage network options and labels
 
 ## v1.4.1 - 2025-04-20
 

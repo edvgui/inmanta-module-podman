@@ -63,6 +63,7 @@ entity Network extends ResourceABC:
     :attr driver: Driver to manage the network (default "bridge")
     :attr ipv6_enabled: Enable IPv6 networking
     :attr labels: Set metadata on a network
+    :attr options: Set options on a network
     """
     bool dns_enabled = true
     string[] dns = []
@@ -70,6 +71,7 @@ entity Network extends ResourceABC:
     string? driver = null
     bool ipv6_enabled = false
     dict labels = {}
+    dict options = {}
 end
 Network.subnets [0:] -- podman::network::Subnet.network [1]
 """
