@@ -93,6 +93,8 @@ class NetworkResource(
             "ipv6_enabled": entity.ipv6_enabled,
             "internal": entity.internal,
             "dns_enabled": entity.dns_enabled,
+            "options": entity.options,
+            "labels": entity.labels,
         }
         if entity.subnets:
             config["subnets"] = [
@@ -127,6 +129,9 @@ def build_create_command(config: dict) -> list[str]:
 
     if not config["dns_enabled"]:
         cmd.append("--disable-dns")
+    
+    cmd.extend([f"--opt={k}={v}" for k, v in config["options"].items()])
+    cmd.extend([f"--label={k}={v}" for k, v in config["labels"].items()])
 
     if "subnets" in config:
         # Create the subnets list
