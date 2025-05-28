@@ -129,7 +129,7 @@ def build_create_command(config: dict) -> list[str]:
 
     if not config["dns_enabled"]:
         cmd.append("--disable-dns")
-    
+
     cmd.extend([f"--opt={k}={v}" for k, v in config["options"].items()])
     cmd.extend([f"--label={k}={v}" for k, v in config["labels"].items()])
 
