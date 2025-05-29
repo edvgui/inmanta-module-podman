@@ -2,6 +2,7 @@
 
 ## v1.5.1 - ?
 
+- Improve dry-runs of podman network resources
 
 ## v1.5.0 - 2025-05-29
 
