@@ -39,6 +39,11 @@ def merge(
     :param config: The config whose content we want to insert into the base
         config.
     """
+    if base_config is None:
+        # There is no value for the base config, the entry is probably missing,
+        # we return the desired config instead
+        return config
+
     if config is None:
         # If config doesn't have a value for this, we don't diverge from
         # the base config
@@ -48,7 +53,8 @@ def merge(
         # If the base config is a dict, we should try to merge each key of
         # the dict that exists in the base config
         assert isinstance(config, dict), type(config)
-        return {k: merge(v, config.get(k)) for k, v in base_config.items()}
+        all_keys = config.keys() | base_config.keys()
+        return {k: merge(base_config.get(k), config.get(k)) for k in all_keys}
 
     if isinstance(base_config, list):
         # If the base config is a list, we should try to compare the list
@@ -93,8 +99,6 @@ class NetworkResource(
             "ipv6_enabled": entity.ipv6_enabled,
             "internal": entity.internal,
             "dns_enabled": entity.dns_enabled,
-            "options": entity.options,
-            "labels": entity.labels,
         }
         if entity.subnets:
             config["subnets"] = [
@@ -104,6 +108,12 @@ class NetworkResource(
                 }
                 for sub in entity.subnets
             ]
+
+        if entity.labels:
+            config["labels"] = entity.labels
+
+        if entity.options:
+            config["options"] = entity.options
 
         return config
 
@@ -130,8 +140,8 @@ def build_create_command(config: dict) -> list[str]:
     if not config["dns_enabled"]:
         cmd.append("--disable-dns")
 
-    cmd.extend([f"--opt={k}={v}" for k, v in config["options"].items()])
-    cmd.extend([f"--label={k}={v}" for k, v in config["labels"].items()])
+    cmd.extend([f"--opt={k}={v}" for k, v in config.get("options", {}).items()])
+    cmd.extend([f"--label={k}={v}" for k, v in config.get("labels", {}).items()])
 
     if "subnets" in config:
         # Create the subnets list
