@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.5.0 - ?
+## v1.5.0 - 2025-05-29
 
 - Allow to manage network options and labels
 
