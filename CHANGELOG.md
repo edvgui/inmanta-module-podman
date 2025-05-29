@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.5.1 - ?
+## v1.5.1 - 2025-05-29
 
 - Improve dry-runs of podman network resources
 
