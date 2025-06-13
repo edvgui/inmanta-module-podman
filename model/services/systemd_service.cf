@@ -105,6 +105,10 @@ implementation service_configuration for SystemdService:
             provides=self.provides,  # But we need to make sure it is created before our provides
         )
         self.file_resources += self._container_config_dir
+    elif self.quadlet:
+        std::assert(false, "The attribute systemd_container_dir must be set when quadlet is true.")
+    else:
+        # Nothing wrong with that
     end
 
     # Run systemctl daemon-reload after any config file change
