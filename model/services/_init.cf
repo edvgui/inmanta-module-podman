@@ -62,6 +62,7 @@ entity SystemdService:
         The streams defined will be automatically available to the container running in
         the service.
     :attr systemd_unit_dir: The directory in which the unit should be created.
+    :attr systemd_container_dir: The directory in which the quadlet file should be created.
     :attr systemctl_command: The systemctl command to run for this service, defaults to
         ["systemctl"] but can be set to ["systemctl", "--user"] for unprivileged units.
     :attr state: The desired execution state for this service.
@@ -85,6 +86,7 @@ entity SystemdService:
     string? on_calendar = null
     string[]? listen_stream = null
     string systemd_unit_dir = "/etc/systemd/system"
+    string? systemd_container_dir = null
     string[] systemctl_command = ["systemctl"]
     service_state_t state
     bool enabled = true

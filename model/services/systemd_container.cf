@@ -148,7 +148,7 @@ implementation quadlet_file for SystemdContainer:
 
     self.unit = QuadletUnitFile(
         path=files::path_join(
-            self._systemd_config_dir.path,
+            self._container_config_dir.path,
             removesuffix(self.service_name, ".service") + ".container",
         ),
         permissions=644,
