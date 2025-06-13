@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.5.2 - ?
+## v1.6.0 - ?
 
+- Add quadlet mode for container systemd services
 
 ## v1.5.1 - 2025-05-29
 

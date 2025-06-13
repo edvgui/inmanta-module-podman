@@ -1,0 +1,57 @@
+[Container]
+ContainerName={{ container.name }}
+Image={{ container.image }}
+{%- if container.hostname is not none %}
+HostName={{ container.hostname }}
+{%- endif %}
+{%- for k, v in container.labels.items() %}
+Label={{ k }}{{ "=" + v if v is not none else "" }}
+{%- endfor %}
+{%- if container.userns is not none %}
+UserNS={{ container.userns }}
+{%- endif %}
+{%- for k, v in container.env.items() %}
+Environment={{ k }}={{ v }}
+{%- endfor %}
+{%- if container.env_file is not none %}
+EnvironmentFile={{ container.env_file }}
+{%- endif %}
+{%- if container.entrypoint is not none %}
+Entrypoint={{ container.entrypoint }}
+{%- endif %}
+{%- if container.command is not none %}
+Exec={{ container.command }}
+{%- endif %}
+{%- if container.user is not none %}
+User={{ container.user }}
+{%- endif %}
+{%- for volume in container.volumes %}
+Volume={{ volume.cli_option }}
+{%- endfor %}
+{%- if container.pod is defined %}
+Pod={{ container.pod.name }}
+{%- endif %}
+{%- for network in container.networks %}
+Network={{ network.cli_option }}
+{%- endfor %}
+{%- for host in container.hosts %}
+AddHost={{ host.cli_option }}
+{%- endfor %}
+{%- for publish in container.publish %}
+PublishPort={{ publish.cli_option }}
+{%- endfor %}
+{%- for uidmap in container.uidmap %}
+UIDMap={{ uidmap.cli_option }}
+{%- endfor %}
+{%- for gidmap in container.gidmap %}
+GIDMap={{ gidmap.cli_option }}
+{%- endfor %}
+{%- if container.no_hosts %}
+PodmanArgs=--no-hosts
+{%- endif %}
+{%- for arg in container.extra_args %}
+{%- if arg.cmd == "podman-run" %}
+PodmanArgs=--{{ arg.name }}{{ "=" + arg.value if arg.value is not none else "" }}
+{%- endif %}
+{%- endfor %}
+

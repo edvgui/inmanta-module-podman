@@ -22,6 +22,8 @@ from pytest_inmanta.plugin import Project, Result
 def test_model(project: Project, state: str = "stopped") -> None:
     model = f"""
         import podman
+        import podman::container_like
+        import podman::container
         import podman::services
         import mitogen
         import std
@@ -38,18 +40,43 @@ def test_model(project: Project, state: str = "stopped") -> None:
             via=mitogen::Local(),
         )
 
-        a = podman::AutoUpdate(
+        db = podman::Container(
             host=host,
+            name="postgresql-server",
+            image="docker.io/library/postgres:13",
             owner=user,
-            rollback=false,
+            networks=[
+                BridgeNetwork(
+                    name="test-net",
+                    ip=std::ipindex("172.42.0.0/24", position=2),
+                ),
+            ],
+            uidmap=[
+                IdMap(container_id="999", host_id="@1000"),
+            ],
+            gidmap=[
+                IdMap(container_id="999", host_id="@1000"),
+            ],
+            env={{
+                "POSTGRES_USER": "test",
+                "POSTGRES_PASSWORD": "test",
+            }},
+            volumes=[
+                Volume(
+                    source="/tmp/pgdata",
+                    container_dir="/var/lib/postgresql/data",
+                    options=["z"],
+                ),
+            ],
         )
 
-        podman::services::SystemdAutoUpdate(
-            auto_update=a,
+        podman::services::SystemdContainer(
+            container=db,
             state={repr(state)},
             enabled=true,
-            systemd_unit_dir=files::path_join("/home", user, ".config/systemd/user"),
+            systemd_unit_dir=files::path_join("/home", user, ".config/containers/systemd"),
             systemctl_command=["systemctl", "--user"],
+            quadlet=true,
         )
     """
 

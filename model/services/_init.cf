@@ -1,5 +1,5 @@
 """
-    Copyright 2023 Guillaume Everarts de Velp
+    Copyright 2025 Guillaume Everarts de Velp
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -24,6 +24,15 @@ import files
 
 
 typedef service_state_t as string matching self in ["configured", "stopped", "restart", "running", "removed"]
+
+
+entity QuadletUnitFile extends files::SystemdUnitFile:
+    """
+    Extension to the systemd unit file that adds the container section
+    used by quadlet.
+    """
+end
+QuadletUnitFile.container [0:1] -- Container
 
 
 entity SystemdService:
@@ -57,6 +66,7 @@ entity SystemdService:
         ["systemctl"] but can be set to ["systemctl", "--user"] for unprivileged units.
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
+    :attr quadlet: Whether to generate a quadlet file instead of a systemd unit
 
     :attr service_name: Attribute used internally to save the name of the top-level
         service to manage.
@@ -78,6 +88,7 @@ entity SystemdService:
     string[] systemctl_command = ["systemctl"]
     service_state_t state
     bool enabled = true
+    bool quadlet = false
 
     string service_name
     string timer_name
@@ -115,3 +126,20 @@ entity SystemdAutoUpdate extends SystemdService:
     string? on_calendar = "daily"
 end
 SystemdAutoUpdate.auto_update [1] -- podman::AutoUpdate
+
+
+implementation container_file_content for QuadletUnitFile:
+    """
+    Resolve the content of the unit file, generate it from a jinja template.
+    """
+    unit_file = self
+    container = self.container
+
+    # Load the content based on the template
+    self.content = (
+        std::template("files/systemd_unit.j2")
+        + std::template("podman/service.container.j2")
+    )
+end
+
+implement QuadletUnitFile using container_file_content when self.container is defined
