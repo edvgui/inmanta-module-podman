@@ -131,4 +131,60 @@ implementation unit_file for SystemdContainer:
 end
 
 
-implement SystemdContainer using resource, service_name, unit_file, parents
+implementation quadlet_file for SystemdContainer:
+    """
+    Deploy and cleanup all the configuration files required by our service.
+    """
+    user = self.container.owner
+    host = self.container.host
+
+    pod = self.container.pod is defined
+        ? self.container.pod
+        : null
+
+    pod_service = pod is defined and pod._systemd_service is defined
+        ? pod._systemd_service
+        : null
+
+    self.unit = QuadletUnitFile(
+        path=files::path_join(self._systemd_config_dir.path, f"container-{self.container.name}.container"),
+        permissions=644,
+        owner=user,
+        group=user,
+        host=host,
+        via=self.container.via is defined ? self.container.via : null,
+        unit=Unit(
+            description=self.description is defined ? self.description : f"Podman {self.service_name}",
+            documentation=["https://github.com/edvgui/inmanta-module-podman"],
+            wants=[
+                self.on_calendar is defined ? [self.timer_name] : [],
+                self.listen_stream is defined ? [self.socket_name] : [],
+            ],
+            binds_to=pod_service is defined
+                ? [pod_service.service_name]
+                : [],
+            after=[
+                pod_service is defined ? [pod_service.service_name] : [],
+            ],
+            part_of=[
+                self.on_calendar is defined ? [self.timer_name] : [],
+                self.listen_stream is defined ? [self.socket_name] : [],
+            ],
+        ),
+        install=Install(
+            wanted_by=["default.target"],
+        ),
+        container=self.container,
+        send_event=true,
+        purged=self.state == "removed",
+        requires=self.requires,
+        provides=self.provides,
+    )
+    self.unit.requires += self._systemd_config_dir
+    self.file_resources += self.unit
+end
+
+
+implement SystemdContainer using resource, service_name, parents
+implement SystemdContainer using unit_file when not self.quadlet
+implement SystemdContainer using quadlet_file when self.quadlet
