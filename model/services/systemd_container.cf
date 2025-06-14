@@ -146,9 +146,11 @@ implementation quadlet_file for SystemdContainer:
         ? pod._systemd_service
         : null
 
+    std::assert(self.systemd_container_dir != null, "The attribute systemd_container_dir must be set when quadlet is true.")
+    std::assert(self._container_config_dir is defined, "Compiler error, self._container_config_dir must be set.")
     self.unit = QuadletUnitFile(
         path=files::path_join(
-            self._systemd_config_dir.path,
+            self._container_config_dir.path,
             removesuffix(self.service_name, ".service") + ".container",
         ),
         permissions=644,

@@ -31,12 +31,9 @@ def test_model(
         import mitogen
         import files
 
-        user = std::get_env("USER")
-
         host = std::Host(
             name="localhost",
             remote_agent=true,
-            remote_user=user,
             ip="127.0.0.1",
             os=std::linux,
             via=mitogen::Local(),
@@ -46,7 +43,6 @@ def test_model(
             host=host,
             name="inmanta-orchestrator",
             hostname=pod.name,
-            owner=user,
             networks=[
                 BridgeNetwork(
                     name="test-net",
@@ -70,7 +66,6 @@ def test_model(
                     host=host,
                     name=f"{{pod.name}}-server",
                     image="ghcr.io/inmanta/orchestrator:latest",
-                    owner=user,
                     user="993:993",
                     entrypoint="/usr/bin/inmanta",
                     command="-vvv --timed-logs server",
@@ -83,7 +78,7 @@ def test_model(
             state={repr(state)},
             on_calendar={repr(on_calendar) if on_calendar is not None else "null"},
             enabled=true,
-            systemd_unit_dir=files::path_join("/home", user, ".config/systemd/user"),
+            systemd_unit_dir="/tmp/systemd/user",
             systemctl_command=["systemctl", "--user"],
         )
     """

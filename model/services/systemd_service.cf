@@ -38,6 +38,7 @@ making sure that the service ready to be deployed.
 """
 
 SystemdService._systemd_config_dir [1] -- files::Directory
+SystemdService._container_config_dir [0:1] -- files::Directory
 
 
 implementation timer_name for SystemdService:
@@ -89,6 +90,22 @@ implementation service_configuration for SystemdService:
         provides=self.provides,  # But we need to make sure it is created before our provides
     )
     self.file_resources += self._systemd_config_dir
+
+    if self.systemd_container_dir != null:
+        self._container_config_dir = files::Directory(
+            path=self.systemd_container_dir,
+            permissions=755,
+            owner=user,
+            group=user,
+            create_parents=true,
+            host=host,
+            via=self._resource.via is defined ? self._resource.via : null,
+            send_event=true,
+            # requires=self.requires,  # We don't need this directory to be created after our requires
+            provides=self.provides,  # But we need to make sure it is created before our provides
+        )
+        self.file_resources += self._container_config_dir
+    end
 
     # Run systemctl daemon-reload after any config file change
     reload = exec::Run(
