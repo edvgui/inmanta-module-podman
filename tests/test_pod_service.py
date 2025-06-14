@@ -66,7 +66,6 @@ def test_model(
                     host=host,
                     name=f"{{pod.name}}-server",
                     image="ghcr.io/inmanta/orchestrator:latest",
-                    owner=user,
                     user="993:993",
                     entrypoint="/usr/bin/inmanta",
                     command="-vvv --timed-logs server",
