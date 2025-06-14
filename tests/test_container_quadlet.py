@@ -29,12 +29,9 @@ def test_model(project: Project, state: str = "stopped") -> None:
         import std
         import files
 
-        user = std::get_env("USER")
-
         host = std::Host(
             name="localhost",
             remote_agent=true,
-            remote_user=user,
             ip="127.0.0.1",
             os=std::linux,
             via=mitogen::Local(),
@@ -44,7 +41,6 @@ def test_model(project: Project, state: str = "stopped") -> None:
             host=host,
             name="postgresql-server",
             image="docker.io/library/postgres:13",
-            owner=user,
             networks=[
                 BridgeNetwork(
                     name="test-net",
@@ -74,8 +70,8 @@ def test_model(project: Project, state: str = "stopped") -> None:
             container=db,
             state={repr(state)},
             enabled=true,
-            systemd_unit_dir=files::path_join("/home", user, ".config/systemd/user"),
-            systemd_container_dir=files::path_join("/home", user, ".config/containers/systemd"),
+            systemd_unit_dir="/tmp/systemd/user",
+            systemd_container_dir="/tmp/containers/systemd",
             systemctl_command=["systemctl", "--user"],
             quadlet=true,
         )
