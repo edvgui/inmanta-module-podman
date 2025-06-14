@@ -185,7 +185,7 @@ implementation quadlet_file for SystemdContainer:
         requires=self.requires,
         provides=self.provides,
     )
-    self.unit.requires += self._systemd_config_dir
+    self.unit.requires += self._container_config_dir
     self.file_resources += self.unit
 end
 
