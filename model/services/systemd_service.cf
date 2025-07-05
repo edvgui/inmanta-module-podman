@@ -39,6 +39,9 @@ making sure that the service ready to be deployed.
 
 SystemdService._systemd_config_dir [1] -- files::Directory
 SystemdService._container_config_dir [0:1] -- files::Directory
+SystemdService._enable_command [0:1] -- exec::Run
+SystemdService._activate_command [1] -- exec::Run
+SystemdService._reload_command [1] -- exec::Run
 
 
 implementation timer_name for SystemdService:
@@ -120,6 +123,7 @@ implementation service_configuration for SystemdService:
         ],
         # provides=self.provides,  # We don't need to run this command before any of our provides
     )
+    self._reload_command = reload
     self.configuration_resources += reload
 
     # All file resources are configuration resources
@@ -233,7 +237,7 @@ implementation run_service for SystemdService:
     host = self._resource.host
 
     # If the service is not active, we start it
-    self.runtime_resources = exec::Run(
+    self._activate_command = exec::Run(
         command=shlex_join([self.systemctl_command, "start", self.unit_name]),
         unless=shlex_join([self.systemctl_command, "is-active", self.unit_name]),
         host=host,
@@ -243,6 +247,8 @@ implementation run_service for SystemdService:
         requires=self.requires,
         provides=self.provides,
     )
+
+    self.runtime_resources += self._activate_command
 end
 
 
@@ -254,7 +260,7 @@ implementation restart_service for SystemdService:
     host = self._resource.host
 
     # If the service is not active, we start it
-    self.runtime_resources += exec::Run(
+    self._activate_command += exec::Run(
         command=shlex_join([self.systemctl_command, "restart", self.unit_name]),
         host=host,
         via=self._resource.via is defined ? self._resource.via : null,
@@ -263,6 +269,8 @@ implementation restart_service for SystemdService:
         requires=self.requires,
         provides=self.provides,
     )
+
+    self.runtime_resources += self._activate_command
 end
 
 
@@ -274,7 +282,7 @@ implementation stop_service for SystemdService:
     host = self._resource.host
 
     # If the service is active, we stop it
-    self.runtime_resources += exec::Run(
+    self._activate_command += exec::Run(
         command=shlex_join([self.systemctl_command, "stop", self.unit_name]),
         onlyif=shlex_join([self.systemctl_command, "is-active", self.unit_name]),
         host=host,
@@ -284,6 +292,8 @@ implementation stop_service for SystemdService:
         requires=self.requires,
         provides=self.provides,
     )
+
+    self.runtime_resources += self._activate_command
 end
 
 
@@ -295,7 +305,7 @@ implementation enable_service for SystemdService:
     host = self._resource.host
 
     # If the service is not enabled, we enable it
-    self.runtime_resources = exec::Run(
+    self._enable_command = exec::Run(
         command=shlex_join([self.systemctl_command, "enable", self.unit_name]),
         unless=shlex_join([self.systemctl_command, "is-enabled", self.unit_name]),
         host=host,
@@ -305,6 +315,8 @@ implementation enable_service for SystemdService:
         requires=self.requires,
         provides=self.provides,
     )
+
+    self.runtime_resources += self._enable_command
 end
 
 
@@ -316,7 +328,7 @@ implementation disable_service for SystemdService:
     host = self._resource.host
 
     # If the service is enabled, we disable it
-    self.runtime_resources = exec::Run(
+    self._enable_command = exec::Run(
         command=shlex_join([self.systemctl_command, "disable", self.unit_name]),
         onlyif=shlex_join([self.systemctl_command, "is-enabled", self.unit_name]),
         host=host,
@@ -326,6 +338,8 @@ implementation disable_service for SystemdService:
         requires=self.requires,
         provides=self.provides,
     )
+
+    self.runtime_resources += self._enable_command
 end
 
 
