@@ -40,7 +40,7 @@ making sure that the service ready to be deployed.
 SystemdService._systemd_config_dir [1] -- files::Directory
 SystemdService._container_config_dir [0:1] -- files::Directory
 SystemdService._enable_command [0:1] -- exec::Run
-SystemdService._activate_command [1] -- exec::Run
+SystemdService._activate_command [0:1] -- exec::Run
 SystemdService._reload_command [1] -- exec::Run
 
 
