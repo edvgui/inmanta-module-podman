@@ -260,7 +260,7 @@ implementation restart_service for SystemdService:
     host = self._resource.host
 
     # If the service is not active, we start it
-    self._activate_command += exec::Run(
+    self._activate_command = exec::Run(
         command=shlex_join([self.systemctl_command, "restart", self.unit_name]),
         host=host,
         via=self._resource.via is defined ? self._resource.via : null,
@@ -282,7 +282,7 @@ implementation stop_service for SystemdService:
     host = self._resource.host
 
     # If the service is active, we stop it
-    self._activate_command += exec::Run(
+    self._activate_command = exec::Run(
         command=shlex_join([self.systemctl_command, "stop", self.unit_name]),
         onlyif=shlex_join([self.systemctl_command, "is-active", self.unit_name]),
         host=host,
