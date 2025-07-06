@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.7.0 - ?
+## v1.7.0 - 2025-07-06
 
 - Expose systemd service resources via relations
 
