@@ -2,6 +2,7 @@
 
 ## v1.8.1 - ?
 
+- Add missing wiring of on_failure option
 
 ## v1.8.0 - 2025-08-17
 
