@@ -71,7 +71,6 @@ implementation unit_file for SystemdContainer:
                 user == "root" ? "network-online.target" : "podman-user-wait-network-online.service",
                 self.on_calendar is defined ? [self.timer_name] : [],
                 self.listen_stream is defined ? [self.socket_name] : [],
-                on_failure=self.on_failure,
             ],
             requires_mounts_for=["%t/containers"],
             binds_to=pod_service is defined
@@ -85,6 +84,7 @@ implementation unit_file for SystemdContainer:
                 self.on_calendar is defined ? [self.timer_name] : [],
                 self.listen_stream is defined ? [self.socket_name] : [],
             ],
+            on_failure=self.on_failure,
         ),
         service=Service(
             environment={"PODMAN_SYSTEMD_UNIT": "%n"},

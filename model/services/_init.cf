@@ -128,6 +128,7 @@ entity SystemdAutoUpdate extends SystemdService:
     Systemd service that manage the auto-update functionality of podman.
     """
     string? on_calendar = "daily"
+    string[]? on_failure = null
 end
 SystemdAutoUpdate.auto_update [1] -- podman::AutoUpdate
 
