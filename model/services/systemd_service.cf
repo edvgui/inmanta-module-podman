@@ -168,6 +168,7 @@ implementation service_timer for SystemdService:
                 description=self.description is defined ? self.description : f"Podman {self.timer_name}",
                 documentation=["https://github.com/edvgui/inmanta-module-podman"],
                 requires=[self.service_name],
+                on_failure=self.on_failure,
             ),
             timer=Timer(
                 on_calendar=self.on_calendar,
