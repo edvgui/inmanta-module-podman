@@ -10,8 +10,8 @@ Label={{ k }}{{ "=" + v if v is not none else "" }}
 {%- if container.userns is not none %}
 UserNS={{ container.userns }}
 {%- endif %}
-{%- for k, v in container.env.items() %}
-Environment={{ k }}={{ v }}
+{%- for name, value in container.env.items() %}
+Environment={{ (name + "=" + value) | files.systemd_unit.quote() }}
 {%- endfor %}
 {%- if container.env_file is not none %}
 EnvironmentFile={{ container.env_file }}

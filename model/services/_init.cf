@@ -57,6 +57,7 @@ entity SystemdService:
     :attr on_calendar: When specified, also configure a timer unit, that will trigger the
         service unit for matching calendar times.  The expression in this field should be
         a valid according to the systemd.timer (5) specifications.
+    :attr on_failure: one or more units that are activated when this unit enters the "failed" state.
     :attr listen_stream: When specified, also configure a socket unit that listens on the
         provided streams, and starts the service when receiving incoming traffic.
         The streams defined will be automatically available to the container running in
@@ -84,6 +85,7 @@ entity SystemdService:
     string? name = null
     string? description = null
     string? on_calendar = null
+    string[]? on_failure = null
     string[]? listen_stream = null
     string systemd_unit_dir = "/etc/systemd/system"
     string? systemd_container_dir = null
@@ -126,6 +128,7 @@ entity SystemdAutoUpdate extends SystemdService:
     Systemd service that manage the auto-update functionality of podman.
     """
     string? on_calendar = "daily"
+    string[]? on_failure = null
 end
 SystemdAutoUpdate.auto_update [1] -- podman::AutoUpdate
 

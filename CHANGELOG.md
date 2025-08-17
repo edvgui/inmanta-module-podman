@@ -1,7 +1,9 @@
 # Changelog
 
-## v1.7.1 - ?
+## v1.8.0 - ?
 
+- Configure OnFailure directive for quadlet services
+- Quote environment variables in quadlet file
 
 ## v1.7.0 - 2025-07-06
 

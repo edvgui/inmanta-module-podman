@@ -66,6 +66,7 @@ implementation unit_file for SystemdAutoUpdate:
             part_of=[
                 self.on_calendar is defined ? [self.timer_name] : [],
             ],
+            on_failure=self.on_failure,
         ),
         service=Service(
             exec_start=auto_update(self.auto_update),
