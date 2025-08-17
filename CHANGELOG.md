@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.8.2 - ?
+
+
 ## v1.8.1 - 2025-08-17
 
 - Add missing wiring of on_failure option
