@@ -209,6 +209,7 @@ implementation service_socket for SystemdService:
                 description=self.description is defined ? self.description : f"Podman {self.socket_name}",
                 documentation=["https://github.com/edvgui/inmanta-module-podman"],
                 requires=[self.service_name],
+                on_failure=self.on_failure,
             ),
             socket=Socket(
                 listen_stream=self.listen_stream,
