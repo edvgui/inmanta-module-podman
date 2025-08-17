@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.8.1 - ?
+
+
 ## v1.8.0 - 2025-08-17
 
 - Configure OnFailure directive for quadlet services
