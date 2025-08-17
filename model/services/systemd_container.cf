@@ -176,6 +176,7 @@ implementation quadlet_file for SystemdContainer:
                 self.on_calendar is defined ? [self.timer_name] : [],
                 self.listen_stream is defined ? [self.socket_name] : [],
             ],
+            on_failure=self.on_failure,
         ),
         install=Install(
             wanted_by=["default.target"],
