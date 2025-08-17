@@ -2,6 +2,7 @@
 
 ## v1.7.1 - ?
 
+- Quote environment variables in quadlet file
 
 ## v1.7.0 - 2025-07-06
 
