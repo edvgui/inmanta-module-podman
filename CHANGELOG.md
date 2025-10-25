@@ -1,7 +1,8 @@
 # Changelog
 
-## v1.8.2 - ?
+## v1.9.0 - ?
 
+- Add freeform podman args to ContainerLike entity
 
 ## v1.8.1 - 2025-08-17
 
