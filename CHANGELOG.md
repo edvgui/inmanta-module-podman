@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.9.0 - ?
+## v1.9.0 - 2025-10-25
 
 - Improve input quoting in generated units
 - Add freeform podman args to ContainerLike entity
