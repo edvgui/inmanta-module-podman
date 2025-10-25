@@ -2,6 +2,7 @@
 
 ## v1.9.0 - ?
 
+- Improve input quoting in generated units
 - Add freeform podman args to ContainerLike entity
 
 ## v1.8.1 - 2025-08-17
