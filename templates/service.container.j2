@@ -51,7 +51,9 @@ PodmanArgs=--no-hosts
 {%- endif %}
 {%- for arg in container.extra_args %}
 {%- if arg.cmd == "podman-run" %}
-PodmanArgs=--{{ arg.name }}{{ "=" + arg.value if arg.value is not none else "" }}
+PodmanArgs={{ ("--" + arg.name + "=" + arg.value if arg.value is not none else "") | files.systemd_unit.quote() }}
 {%- endif %}
 {%- endfor %}
-
+{%- for arg in container.podman_args %}
+PodmanArgs={{ arg | files.systemd_unit.quote() }}
+{%- endfor %}

@@ -189,6 +189,7 @@ def container_run(
         option("entrypoint", container.entrypoint),
         option("user", container.user),
         *extra_args("podman-run", container.extra_args),
+        *container.podman_args,
         container.image,
         container.command,
     ]
