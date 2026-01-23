@@ -17,7 +17,6 @@ Contact: edvgui@gmail.com
 """
 
 import json
-import typing
 
 import inmanta.agent.handler
 import inmanta.const
@@ -28,9 +27,9 @@ import inmanta_plugins.podman.resources.abc
 
 
 def merge(
-    base_config: typing.Union[dict, list[dict], object],
-    config: typing.Union[dict, list[dict], object],
-) -> typing.Union[dict, list[dict], object]:
+    base_config: dict | list[dict] | object,
+    config: dict | list[dict] | object,
+) -> dict | list[dict] | object:
     """
     Merge the config into the base_config.  This is similar to calling the
     update method of a dict, except that we are here merging lists as well.
