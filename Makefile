@@ -1,12 +1,10 @@
 SHELL = bash
 
 isort = isort inmanta_plugins tests
+black_preview = black --preview inmanta_plugins tests
 black = black inmanta_plugins tests
 flake8 = flake8 inmanta_plugins tests
 pyupgrade = pyupgrade --py39-plus $$(find inmanta_plugins tests -type f -name '*.py')
-
-test_env_vars:
-	@ python -c 'import yaml, pathlib; print(" ".join(f"{k}='{v}'" for k, v in yaml.safe_load(pathlib.Path(".ci-integration-tests.yml").read_text())["env_vars"].items()))'
 
 .PHONY: install
 install:
@@ -15,6 +13,7 @@ install:
 .PHONY: format
 format:
 	$(isort)
+	$(black_preview)
 	$(black)
 	$(flake8)
 	$(pyupgrade)
