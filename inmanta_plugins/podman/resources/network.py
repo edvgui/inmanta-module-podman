@@ -17,7 +17,6 @@ Contact: edvgui@gmail.com
 """
 
 import json
-import typing
 
 import inmanta.agent.handler
 import inmanta.const
