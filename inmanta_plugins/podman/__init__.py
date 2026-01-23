@@ -66,7 +66,7 @@ def join(parts: list[str], *, separator: str) -> str:
     return separator.join(parts)
 
 
-def option(name: str, value: str | int | None) -> typing.Optional[str]:
+def option(name: str, value: str | int | None) -> str | None:
     """
     Helper function to create a cli option with the given name and value,
     or None if the value is None.
@@ -125,7 +125,7 @@ def container_rm(
     :param cidfile: Read the container ID from the file
     :param time: Seconds to wait for stop before killing the container
     """
-    cmd: list[typing.Optional[str]] = [
+    cmd: list[str | None] = [
         "/usr/bin/podman",
         "container",
         "rm",
@@ -163,7 +163,7 @@ def container_run(
     :param detach: Run container in background and print container ID
     :param replace: If a container with the same name exists, replace it
     """
-    cmd: list[typing.Optional[str]] = [
+    cmd: list[str | None] = [
         "/usr/bin/podman",
         "container",
         "run",
@@ -214,7 +214,7 @@ def container_stop(
     :param cidfile: Read the container ID from the file
     :param time: Seconds to wait for stop before killing the container
     """
-    cmd: list[typing.Optional[str]] = [
+    cmd: list[str | None] = [
         "/usr/bin/podman",
         "container",
         "stop",
@@ -245,7 +245,7 @@ def pod_create(
     :param exit_policy: Behaviour when the last container exits
     :param replace: If a pod with the same name exists, replace it
     """
-    cmd: list[typing.Optional[str]] = [
+    cmd: list[str | None] = [
         "/usr/bin/podman",
         "pod",
         "create",
@@ -287,7 +287,7 @@ def pod_rm(
     :param pod_id_file: Read the pod ID from the file
     :param time: Seconds to wait for stop before killing the pod
     """
-    cmd: list[typing.Optional[str]] = [
+    cmd: list[str | None] = [
         "/usr/bin/podman",
         "pod",
         "rm",
@@ -313,7 +313,7 @@ def pod_start(
     :param pod: The pod that should be started.
     :param pod_id_file: Read the pod ID from the file
     """
-    cmd: list[typing.Optional[str]] = [
+    cmd: list[str | None] = [
         "/usr/bin/podman",
         "pod",
         "start",
@@ -340,7 +340,7 @@ def pod_stop(
     :param pod_id_file: Read the pod ID from the file
     :param time: Seconds to wait for stop before killing the pod
     """
-    cmd: list[typing.Optional[str]] = [
+    cmd: list[str | None] = [
         "/usr/bin/podman",
         "pod",
         "stop",

@@ -135,7 +135,7 @@ class ImageFromSourceResource(ImageResource):
         "context",
     )
     options: list[str]
-    context: typing.Optional[str]
+    context: str | None
 
     @classmethod
     def get_options(
@@ -249,8 +249,8 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
 )
 class ImageFromRegistryResource(ImageResource):
     fields = ("transport", "digest")
-    transport: typing.Optional[str]
-    digest: typing.Optional[str]
+    transport: str | None
+    digest: str | None
 
 
 @inmanta.agent.handler.provider("podman::ImageFromRegistry", "")

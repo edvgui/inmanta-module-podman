@@ -77,8 +77,8 @@ class HandlerABC(inmanta_plugins.mitogen.abc.Handler[ABC]):
         resource: ABC,
         *,
         command: list[str],
-        timeout: typing.Optional[int],
-        cwd: typing.Optional[str] = None,
+        timeout: int | None,
+        cwd: str | None = None,
         env: dict[str, str] = {},
     ) -> tuple[str, str, int]:
         """
