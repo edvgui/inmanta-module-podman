@@ -8,18 +8,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
-          python-version: 3.12
-          architecture: 'x64'
+        python-version: 3.12
+        architecture: 'x64'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+
     - name: Install inmanta-core
-      run: python3.12 -m pip install inmanta-core --user
+      run: |
+        uv venv
+        uv pip install inmanta-core
+
     - name: Build a binary wheel
-      run: python3.12 -m inmanta.app module build
+      run: uv run inmanta module build
+
     - name: Store the distribution packages
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: python-package-distributions
         path: dist/
@@ -39,7 +48,7 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: python-package-distributions
         path: dist/
@@ -60,12 +69,12 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: python-package-distributions
         path: dist/
     - name: Sign the dists with Sigstore
-      uses: sigstore/gh-action-sigstore-python@v3.0.0
+      uses: sigstore/gh-action-sigstore-python@v3.2.0
       with:
         inputs: >-
           ./dist/*.whl
@@ -93,18 +102,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
-          python-version: 3.12
-          architecture: 'x64'
+        python-version: 3.12
+        architecture: 'x64'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+
     - name: Install inmanta-core
-      run: python3.12 -m pip install inmanta-core --user
+      run: |
+        uv venv
+        uv pip install inmanta-core
+
     - name: Build a binary wheel
-      run: python3.12 -m inmanta.app module build --dev
+      run: uv run inmanta module build --dev
+
     - name: Store the distribution packages
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: python-package-distributions-dev
         path: dist/
@@ -125,7 +143,7 @@ jobs:
 
     steps:
     - name: Download all the dists
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: python-package-distributions-dev
         path: dist/
