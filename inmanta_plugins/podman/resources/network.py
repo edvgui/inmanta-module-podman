@@ -108,6 +108,16 @@ class NetworkResource(
                 for sub in entity.subnets
             ]
 
+        if entity.routes:
+            config["routes"] = [
+                {
+                    "destination": route.destination,
+                    "gateway": route.gateway,
+                    "metric": str(route.metric),
+                }
+                for route in entity.routes
+            ]
+
         if entity.labels:
             config["labels"] = entity.labels
 
@@ -155,6 +165,11 @@ def build_create_command(config: dict) -> list[str]:
         ]
         if gateways:
             cmd.extend(["--gateway", ",".join(gateways)])
+
+    if "routes" in config:
+        # Serialize each route and add them to the cmd
+        for route in config["routes"]:
+            cmd.extend(["--route", ",".join(route.values())])
 
     cmd.append(config["name"])
 

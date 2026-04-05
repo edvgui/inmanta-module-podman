@@ -79,6 +79,12 @@ Network.subnets [0:] -- podman::network::Subnet.network [1]
     more than one subnet for this network.
 """
 
+Network.routes [0:] -- podman::network::Route.network [1]
+"""
+Static route to add to each container in the network.  Only available with
+the netavark backend.
+"""
+
 index Network(host, owner, name)
 
 
