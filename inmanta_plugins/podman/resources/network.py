@@ -113,7 +113,7 @@ class NetworkResource(
                 {
                     "destination": route.destination,
                     "gateway": route.gateway,
-                    "metric": str(route.metric),
+                    "metric": route.metric,
                 }
                 for route in entity.routes
             ]
@@ -169,7 +169,8 @@ def build_create_command(config: dict) -> list[str]:
     if "routes" in config:
         # Serialize each route and add them to the cmd
         for route in config["routes"]:
-            cmd.extend(["--route", ",".join(route.values())])
+            tmpl = "%(destination)s,%(gateway)s,%(metric)d"
+            cmd.extend(["--route", tmpl % route])
 
     cmd.append(config["name"])
 
