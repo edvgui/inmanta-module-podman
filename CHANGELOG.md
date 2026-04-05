@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.10.1 - ?
+
+
 ## v1.10.0 - 2026-04-05
 
 - Allow to configure routes on a subnet
