@@ -26,11 +26,30 @@ entity Subnet:
     :attr subnet: Subnet in CIDR format
     :attr gateway: IPv4 or IPv6 gateway for the subnet
     """
-    string subnet
-    string? gateway = null
+    std::ipv_any_network subnet
+    std::ipv_any_address? gateway = null
 end
 
 index Subnet(network, subnet)
 
-
 implement Subnet using std::none
+
+entity Route:
+    """
+    A static route in the format <destination in CIDR notation>,<gateway>,<route metric (optional)>.
+    This route will be added to every container in this network.
+    Only available with the netavark backend.
+    cf. https://docs.podman.io/en/stable/markdown/podman-network-create.1.html#route-route
+    
+    :attr destination: The target cidr
+    :attr gateway: The next hop to reach this cidr
+    :attr metric: Metric, to prioritize this route over others
+    """
+    std::ipv_any_network destination
+    std::ipv_any_address gateway
+    int metric = 100
+end
+
+index Route(network, destination)
+
+implement Route using std::none

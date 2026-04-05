@@ -41,6 +41,7 @@ def test_model(project: Project, purged: bool = False) -> None:
             host=host,
             name="test-net",
             subnets=[Subnet(subnet="172.45.0.0/24")],
+            routes=[Route(destination="10.0.0.0/24", gateway="172.45.0.3")],
             options={{"isolate": "true"}},
             labels={{"test": "a"}},
             purged={json.dumps(purged)},
