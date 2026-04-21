@@ -21,7 +21,12 @@ import json
 from pytest_inmanta.plugin import Project
 
 
-def test_model(project: Project, purged: bool = False) -> None:
+def test_model(
+    project: Project,
+    purged: bool = False,
+    subnets: list[str] = ["172.45.0.0/24"],
+    routes: list[dict] = ["10.0.0.0/24"],
+) -> None:
     model = f"""
         import podman
         import podman::network
@@ -40,8 +45,14 @@ def test_model(project: Project, purged: bool = False) -> None:
         podman::Network(
             host=host,
             name="test-net",
-            subnets=[Subnet(subnet="172.45.0.0/24")],
-            routes=[Route(destination="10.0.0.0/24", gateway="172.45.0.3")],
+            subnets=[
+                Subnet(subnet=s)
+                for s in {json.dumps(subnets)}
+            ],
+            routes=[
+                Route(destination=d, gateway="172.45.0.3")
+                for d in {json.dumps(routes)}
+            ],
             options={{"isolate": "true"}},
             labels={{"test": "a"}},
             purged={json.dumps(purged)},
@@ -76,6 +87,22 @@ def test_deploy(project: Project) -> None:
         res.discovered_resource_id for res in result.discovered_resources
     ]
     assert network_resource_id in discovered_resources
+
+    # Update the network, add a subnet and a route
+    test_model(
+        project,
+        purged=False,
+        subnets=["172.45.0.0/24", "172.46.0.0/24"],
+        routes=["10.0.0.0/24", "192.168.1.0/24"],
+    )
+    assert project.dryrun_resource("podman::Network")
+    project.deploy_resource("podman::Network")
+    assert not project.dryrun_resource("podman::Network")
+
+    # Check that a desired state with less subnets and routes
+    # doesn't cause any changes
+    test_model(project, purged=False)
+    assert not project.dryrun_resource("podman::Network")
 
     # Make sure the network is gone
     test_model(project, purged=True)

@@ -155,7 +155,7 @@ def build_create_command(config: dict) -> list[str]:
     if "subnets" in config:
         # Create the subnets list
         subnets = [sub["subnet"] for sub in config["subnets"]]
-        cmd.extend(["--subnet", ",".join(subnets)])
+        cmd.extend([f"--subnet={s}" for s in subnets])
 
         # Create the gateways list
         gateways = [
@@ -164,7 +164,7 @@ def build_create_command(config: dict) -> list[str]:
             if sub.get("gateway", None) is not None
         ]
         if gateways:
-            cmd.extend(["--gateway", ",".join(gateways)])
+            cmd.extend([f"--gateway={g}" for g in gateways])
 
     if "routes" in config:
         # Serialize each route and add them to the cmd
