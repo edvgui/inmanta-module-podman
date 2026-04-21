@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.10.2 - ?
+
+
 ## v1.10.1 - 2026-04-21
 
 - Fix subnets/routes diffing for podman::Network
