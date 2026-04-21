@@ -192,6 +192,54 @@ class NetworkHandler(
         if "config" not in diff:
             return diff
 
+        match current.config, desired.config:
+            case {"subnets": list() as current_subnets}, {
+                "subnets": list() as desired_subnets
+            }:
+                # If both current and desired config have a subnets list, we should try to match
+                # the subnets one-to-one, to avoid unnecessary changes if the order of the subnets
+                current_subnets_mapping = {
+                    sub["subnet"]: sub for sub in current_subnets
+                }
+                desired_subnets_mapping = {
+                    sub["subnet"]: sub for sub in desired_subnets
+                }
+                desired_subnets_mapping = merge(
+                    current_subnets_mapping, desired_subnets_mapping
+                )
+                if desired_subnets_mapping == current_subnets_mapping:
+                    # If by applying the desired state to the current config
+                    # (using the merge helper) we don't detect any change, then
+                    # our desired state doesn't differ from the current state
+                    desired.config["subnets"] = current.config["subnets"]
+            case _:
+                # For other cases, we can just merge the config together
+                pass
+
+        match current.config, desired.config:
+            case {"routes": list() as current_routes}, {
+                "routes": list() as desired_routes
+            }:
+                # If both current and desired config have a routes list, we should try to match
+                # the routes one-to-one, to avoid unnecessary changes if the order of the routes
+                current_routes_mapping = {
+                    route["destination"]: route for route in current_routes
+                }
+                desired_routes_mapping = {
+                    route["destination"]: route for route in desired_routes
+                }
+                desired_routes_mapping = merge(
+                    current_routes_mapping, desired_routes_mapping
+                )
+                if desired_routes_mapping == current_routes_mapping:
+                    # If by applying the desired state to the current config
+                    # (using the merge helper) we don't detect any change, then
+                    # our desired state doesn't differ from the current state
+                    desired.config["routes"] = current.config["routes"]
+            case _:
+                # For other cases, we can just merge the config together
+                pass
+
         updated_config = merge(current.config, desired.config)
         if current.config == updated_config:
             # If by applying the desired state to the current config
