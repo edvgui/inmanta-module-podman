@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.11.0 - ?
+## v1.11.0 - 2026-05-25
 
 - Support all container and pod quadlet unit configuration options
 - Add quadlet mode for pod systemd services
