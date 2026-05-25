@@ -28,11 +28,12 @@ typedef service_state_t as string matching self in ["configured", "stopped", "re
 
 entity QuadletUnitFile extends files::SystemdUnitFile:
     """
-    Extension to the systemd unit file that adds the container section
+    Extension to the systemd unit file that adds the container or pod section
     used by quadlet.
     """
 end
 QuadletUnitFile.container [0:1] -- Container
+QuadletUnitFile.pod [0:1] -- Pod
 
 
 entity SystemdService:
@@ -147,4 +148,20 @@ implementation container_file_content for QuadletUnitFile:
     )
 end
 
+
+implementation pod_file_content for QuadletUnitFile:
+    """
+    Resolve the content of the unit file for a pod, generate it from a jinja template.
+    """
+    unit_file = self
+    pod = self.pod
+
+    # Load the content based on the template
+    self.content = (
+        std::template("files/systemd_unit.j2")
+        + std::template("podman/service.pod.j2")
+    )
+end
+
 implement QuadletUnitFile using container_file_content when self.container is defined
+implement QuadletUnitFile using pod_file_content when self.pod is defined

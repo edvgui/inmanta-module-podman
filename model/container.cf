@@ -39,7 +39,7 @@ entity Volume:
     string cli_option
 end
 
-index Volume(container, container_dir)
+index Volume(container_like, container_dir)
 
 
 implementation volume_cli_options for Volume:
@@ -57,3 +57,66 @@ end
 
 
 implement Volume using volume_cli_options
+
+
+entity Health:
+    """
+    Healthcheck configuration for a container.
+
+    cf. https://docs.podman.io/en/latest/markdown/podman-container.unit.5.html
+
+    :attr cmd: Set or alter a healthcheck command.
+    :attr interval: Set an interval for the healthcheck.
+    :attr retries: The number of retries allowed before a healthcheck is considered to be unhealthy.
+    :attr timeout: The maximum time allowed to complete the healthcheck.
+    :attr start_period: The initialization time needed to bootstrap.
+    :attr startup_cmd: Set a startup healthcheck command.
+    :attr startup_interval: Set an interval for the startup healthcheck.
+    :attr startup_retries: The number of attempts allowed before the startup healthcheck restarts the container.
+    :attr startup_success: The number of successful runs required before the startup healthcheck succeeds.
+    :attr startup_timeout: The maximum time allowed to complete the startup healthcheck before being aborted.
+    :attr log_destination: Set the destination of the healthcheck log.
+    :attr max_log_count: Set maximum number of attempts in the healthcheck log file.
+    :attr max_log_size: Set maximum length in characters of stored healthcheck log.
+    :attr on_failure: Action to take once the container transitions to an unhealthy state.
+        One of ``none``, ``kill``, ``restart``, ``stop``.
+    """
+    string? cmd = null
+    string? interval = null
+    int? retries = null
+    string? timeout = null
+    string? start_period = null
+    string? startup_cmd = null
+    string? startup_interval = null
+    int? startup_retries = null
+    int? startup_success = null
+    string? startup_timeout = null
+    string? log_destination = null
+    int? max_log_count = null
+    int? max_log_size = null
+    string? on_failure = null
+end
+
+implement Health using std::none
+
+
+entity SecurityLabel:
+    """
+    SELinux security label configuration for a container.
+
+    cf. https://docs.podman.io/en/latest/markdown/podman-container.unit.5.html
+
+    :attr disable: Turn off label separation for the container.
+    :attr type: The label type for the container processes.
+    :attr level: The label level for the container processes.
+    :attr file_type: The label type for the container files.
+    :attr nested: Allow SecurityLabels within container.
+    """
+    bool disable = false
+    string? type = null
+    string? level = null
+    string? file_type = null
+    bool nested = false
+end
+
+implement SecurityLabel using std::none
