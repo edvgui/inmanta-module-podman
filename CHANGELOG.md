@@ -4,6 +4,7 @@
 
 - Support all container and pod quadlet unit configuration options
 - Add quadlet mode for pod systemd services
+- Don't require std::AgentConfig
 
 ## v1.10.1 - 2026-04-21
 
