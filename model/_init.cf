@@ -357,17 +357,6 @@ end
 index AutoUpdate(host, owner, name)
 
 
-implementation require_agent_config for ResourceABC:
-    """
-    Resources in this module expect the agent name to match the host name.
-    This implementation makes sure that the agent config resource is always
-    deployed before our resources.
-    """
-    agent_config = std::AgentConfig[agentname=self.host.name]
-    agent_config.provides = self
-end
-
-
 implementation pod_consistency for Container:
     """
     Make sure that a container is configured to run on the same host as the pod it
@@ -379,7 +368,7 @@ implementation pod_consistency for Container:
 end
 
 
-implement ResourceABC using require_agent_config
+implement ResourceABC using std::none
 implement Network using parents
 implement NetworkDiscovery using parents
 implement ContainerLike using parents
