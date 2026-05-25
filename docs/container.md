@@ -73,8 +73,8 @@ References:
 | `stop_timeout`       | `--stop-timeout`                        | `StopTimeout`             |
 | `timezone`           | `--tz`                                  | `TimeZone`                |
 | `notify`             | `--sdnotify`                            | `Notify`                  |
-| `auto_update`        | (handled by podman-auto-update service) | `AutoUpdate`              |
-| `pod`                | (wired by `SystemdContainer`)           | `Pod`                     |
+| `auto_update`        | `--label=io.containers.autoupdate=<v>`  | `AutoUpdate`              |
+| `pod`                | `--pod` (or `--pod-id-file` via systemd)| `Pod`                     |
 | `start_with_pod`     | (quadlet-only)                          | `StartWithPod`            |
 | `seccomp_profile`    | `--security-opt=seccomp=<value>`        | `SeccompProfile`          |
 | `mask`               | `--security-opt=mask=<value>`           | `Mask`                    |

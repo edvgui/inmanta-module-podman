@@ -204,6 +204,7 @@ def test_all_options_in_command(project: Project) -> None:
         "--dns-search=example.com",
         "--dns-option=ndots:1",
         "--label=role=database",
+        "--label=io.containers.autoupdate=registry",
         "--annotation=io.kubernetes.cri-o.image=postgres",
         "--uidmap=999:@1000",
         "--gidmap=999:@1000",
@@ -272,6 +273,43 @@ def test_all_options_in_command(project: Project) -> None:
     ]
     missing = [token for token in expected if token not in content]
     assert not missing, f"missing tokens in unit file: {missing}\ncontent:\n{content}"
+
+
+def test_pod_cli_option(project: Project) -> None:
+    """
+    Verify that ``container_run`` emits ``--pod=<name>`` when the container
+    is attached to a pod and no ``pod_id_file`` is passed by the caller.
+    """
+    project.compile(
+        """
+        import podman
+        import podman::container_like
+        import podman::container
+        import std
+        import mitogen
+
+        host = std::Host(
+            name="localhost",
+            remote_agent=true,
+            ip="127.0.0.1",
+            os=std::linux,
+            via=mitogen::Local(),
+        )
+
+        pod = podman::Pod(host=host, name="my-pod")
+
+        container = podman::Container(
+            host=host,
+            name="my-container",
+            image="docker.io/library/alpine:latest",
+            pod=pod,
+        )
+
+        std::print(podman::container_run(container))
+        """,
+        no_dedent=False,
+    )
+    assert "--pod=my-pod" in project.get_stdout()
 
 
 def test_deploy(project: Project) -> None:

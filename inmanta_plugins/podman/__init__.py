@@ -19,7 +19,19 @@ Contact: edvgui@gmail.com
 import shlex
 import typing
 
+import inmanta.ast
 import inmanta.plugins
+
+
+def _optional(value_getter: typing.Callable[[], object]) -> object | None:
+    """
+    Resolve a `[0:1]` relation or any other potentially unset attribute,
+    returning ``None`` instead of raising ``OptionalValueException``.
+    """
+    try:
+        return value_getter()
+    except inmanta.ast.OptionalValueException:
+        return None
 
 
 @inmanta.plugins.plugin()
@@ -247,6 +259,13 @@ def container_run(
         option("cidfile", cidfile),
         option("cgroups", cgroups or container.cgroups_mode),
         option("pod-id-file", pod_id_file),
+        # --pod and --pod-id-file are mutually exclusive: only set --pod
+        # when no pod-id-file is provided by the caller.
+        (
+            option("pod", _optional(lambda: container.pod.name))
+            if pod_id_file is None
+            else None
+        ),
         option("sdnotify", sdnotify or container.notify),
         flag("detach", detach),
         flag("replace", replace),
@@ -263,6 +282,11 @@ def container_run(
         *repeated("dns-search", container.dns_search),
         *repeated("dns-option", container.dns_option),
         *{f"--label={k}={v}" for k, v in container.labels.items()},
+        (
+            f"--label=io.containers.autoupdate={container.auto_update}"
+            if container.auto_update is not None
+            else None
+        ),
         *(f"--annotation={k}={v}" for k, v in container.annotations.items()),
         *options("uidmap", container.uidmap),
         *options("gidmap", container.gidmap),
@@ -289,7 +313,7 @@ def container_run(
         option("stop-signal", container.stop_signal),
         option("stop-timeout", container.stop_timeout),
         option("tz", container.timezone),
-        *health_options(container.health),
+        *health_options(_optional(lambda: container.health)),
         *[f"--env={k}={v}" for k, v in container.env.items()],
         option("env-file", container.env_file),
         flag("env-host", container.environment_host),
@@ -301,7 +325,7 @@ def container_run(
         option(
             "security-opt", "no-new-privileges" if container.no_new_privileges else None
         ),
-        *security_label_options(container.security_label),
+        *security_label_options(_optional(lambda: container.security_label)),
         option(
             "security-opt",
             (
