@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.11.1 - ?
+
+
 ## v1.11.0 - 2026-05-25
 
 - Support all container and pod quadlet unit configuration options
