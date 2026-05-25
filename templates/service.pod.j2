@@ -1,0 +1,76 @@
+[Pod]
+PodName={{ pod.name }}
+{%- if pod.hostname is not none %}
+HostName={{ pod.hostname }}
+{%- endif %}
+{%- for k, v in pod.labels.items() %}
+Label={{ k }}{{ "=" + v if v is not none else "" }}
+{%- endfor %}
+{%- if pod.userns is not none %}
+UserNS={{ pod.userns }}
+{%- endif %}
+{%- if pod.sub_uid_map is not none %}
+SubUIDMap={{ pod.sub_uid_map }}
+{%- endif %}
+{%- if pod.sub_gid_map is not none %}
+SubGIDMap={{ pod.sub_gid_map }}
+{%- endif %}
+{%- for module in pod.containers_conf_module %}
+ContainersConfModule={{ module }}
+{%- endfor %}
+{%- for arg in pod.global_args %}
+GlobalArgs={{ arg | files.systemd_unit.quote() }}
+{%- endfor %}
+{%- for dns in pod.dns %}
+DNS={{ dns }}
+{%- endfor %}
+{%- for search in pod.dns_search %}
+DNSSearch={{ search }}
+{%- endfor %}
+{%- for opt in pod.dns_option %}
+DNSOption={{ opt }}
+{%- endfor %}
+{%- if pod.ip is not none %}
+IP={{ pod.ip }}
+{%- endif %}
+{%- if pod.ip6 is not none %}
+IP6={{ pod.ip6 }}
+{%- endif %}
+{%- if pod.shm_size is not none %}
+ShmSize={{ pod.shm_size }}
+{%- endif %}
+{%- if pod.exit_policy is not none %}
+ExitPolicy={{ pod.exit_policy }}
+{%- endif %}
+{%- for volume in pod.volumes %}
+Volume={{ volume.cli_option }}
+{%- endfor %}
+{%- for network in pod.networks %}
+Network={{ network.cli_option }}
+{%- endfor %}
+{%- for alias in pod.network_alias %}
+NetworkAlias={{ alias }}
+{%- endfor %}
+{%- for host in pod.hosts %}
+AddHost={{ host.cli_option }}
+{%- endfor %}
+{%- for publish in pod.publish %}
+PublishPort={{ publish.cli_option }}
+{%- endfor %}
+{%- for uidmap in pod.uidmap %}
+UIDMap={{ uidmap.cli_option }}
+{%- endfor %}
+{%- for gidmap in pod.gidmap %}
+GIDMap={{ gidmap.cli_option }}
+{%- endfor %}
+{%- if pod.no_hosts %}
+PodmanArgs=--no-hosts
+{%- endif %}
+{%- for arg in pod.extra_args %}
+{%- if arg.cmd == "podman-pod-create" %}
+PodmanArgs={{ ("--" + arg.name + "=" + arg.value if arg.value is not none else "") | files.systemd_unit.quote() }}
+{%- endif %}
+{%- endfor %}
+{%- for arg in pod.podman_args %}
+PodmanArgs={{ arg | files.systemd_unit.quote() }}
+{%- endfor %}

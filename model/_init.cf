@@ -107,16 +107,40 @@ entity ContainerLike extends ResourceABC:
     can have.
 
     :attr hostname: Set a hostname to the container.
-    :attr labels: Add metadata to a container.
+    :attr labels: Add metadata to a container or pod.
     :attr no_hosts: Do not create /etc/hosts within the container, instead use the version from the image
     :attr userns: Set the user namespace mode for the container.
-    :attr podman_args: Extra podman-run arguments, to pass through as is.
+    :attr podman_args: Extra arguments, to pass through as is at the end of the podman command.
+    :attr global_args: Extra arguments to pass directly after the podman command, before the subcommand.
+    :attr containers_conf_module: Load the specified containers.conf(5) module(s).
+    :attr dns: Set network-scoped DNS resolver/nameservers for containers.
+    :attr dns_search: Set custom DNS search domains.
+    :attr dns_option: Set custom DNS options.
+    :attr network_alias: Add network-scoped alias for the container/pod.
+    :attr ip: Specify a static IPv4 address for the container/pod.
+    :attr ip6: Specify a static IPv6 address for the container/pod.
+    :attr shm_size: Size of /dev/shm.  Format is `<number>[<unit>]`.
+    :attr sub_uid_map: Run the container in a new user namespace using the map with name in the
+        /etc/subuid file.
+    :attr sub_gid_map: Run the container in a new user namespace using the map with name in the
+        /etc/subgid file.
     """
     string? hostname = null
     dict labels = {}
     bool no_hosts = false
     string? userns = null
     string[] podman_args = []
+    string[] global_args = []
+    string[] containers_conf_module = []
+    string[] dns = []
+    string[] dns_search = []
+    string[] dns_option = []
+    string[] network_alias = []
+    string? ip = null
+    string? ip6 = null
+    string? shm_size = null
+    string? sub_uid_map = null
+    string? sub_gid_map = null
 end
 ContainerLike.networks [0:] -- podman::container_like::Network.container_like [1]
 """Set the network mode for the container."""
@@ -133,6 +157,9 @@ ContainerLike.gidmap [0:] -- podman::container_like::IdMap
 ContainerLike.uidmap [0:] -- podman::container_like::IdMap
 """Map the user ids of the container to ids on the host"""
 
+ContainerLike.volumes [0:] -- podman::container::Volume.container_like [1]
+"""Create a bind mount."""
+
 ContainerLike.extra_args [0:] -- podman::container_like::ExtraArg
 """
 Relation to insert any currently unsupported argument type in any of the commands
@@ -143,7 +170,11 @@ that might be used to create/start/stop/remove the pod or container
 entity Pod extends ContainerLike:
     """
     Run a pod.
+
+    :attr exit_policy: Set the exit policy of the pod when the last container exits.
+        Supported policies are ``continue`` and ``stop``.
     """
+    string? exit_policy = null
 end
 
 index Pod(host, owner, name)
@@ -151,32 +182,110 @@ index Pod(host, owner, name)
 
 entity Container extends ContainerLike:
     """
-    Run a process in a new container. 
-    
+    Run a process in a new container.
+
     Podman run starts a process with its own file system, its own networking,
     and its own isolated process tree.
 
-    :attr image: The image of the container
+    :attr image: The image of the container.
     :attr env: Set environment variables.
     :attr env_file: Read the environment variables from the file.
+    :attr environment_host: Use the host environment inside the container.
     :attr entrypoint: Override the default ENTRYPOINT from the image.
     :attr command: Override the default COMMAND from the image.
     :attr user: Sets the username or UID used and, optionally, the groupname or GID for the specified command.
         Both user and group may be symbolic or numeric.
         Format: user[:group]
+    :attr group: The GID to run the process inside the container as.
+    :attr group_add: Assign additional groups to the primary user running within the container process.
+    :attr working_dir: Working directory inside the container.
+    :attr annotations: Add an annotation to the container.
+    :attr expose_host_port: Expose a port, or a range of ports.
+    :attr mount: Attach a filesystem mount to the container.  Each entry is a comma-separated
+        list of options.
+    :attr tmpfs: Mount a tmpfs in the container, in the format ``destination[:options]``.
+    :attr read_only: Mount the container's root filesystem as read-only.
+    :attr read_only_tmpfs: If ``read_only`` is true, podman mounts a tmpfs on
+        /dev, /dev/shm, /run, /tmp, and /var/tmp.
+    :attr add_device: Add a host device to the container.
+    :attr add_capability: Add Linux capabilities.
+    :attr drop_capability: Drop Linux capabilities (``all`` to drop them all).
+    :attr memory: Memory limit.  Format is `<number>[<unit>]`.
+    :attr pids_limit: Tune the container's pids limit.  Set ``-1`` for unlimited.
+    :attr ulimit: ulimit options.
+    :attr cgroups_mode: Cgroups mode.  One of ``enabled``, ``disabled``, ``no-conmon``, ``split``.
+    :attr log_driver: Logging driver for the container.
+    :attr log_opt: Logging driver-specific options.
+    :attr pull: Pull image policy.  One of ``always``, ``missing``, ``never``, ``newer``.
+    :attr run_init: Run an init inside the container that forwards signals and reaps processes.
+    :attr stop_signal: Signal to stop a container.
+    :attr stop_timeout: Timeout, in seconds, to stop the container before sending SIGKILL.
+    :attr timezone: Set the timezone in the container.
+    :attr notify: How sd-notify behaves.  Use ``healthy`` to delay until the container becomes healthy.
+    :attr auto_update: Auto-update policy.  One of ``registry``, ``local``.
+    :attr start_with_pod: Whether the container should start with the pod.
+    :attr seccomp_profile: Path to a json file containing the seccomp configuration, or ``unconfined``.
+    :attr mask: Path to mask separated by a colon.
+    :attr unmask: Path to unmask separated by a colon, or ``ALL``.
+    :attr no_new_privileges: Disable container processes from gaining additional privileges.
+    :attr sysctl: Configure namespaced kernel parameters at runtime.
+    :attr rootfs: Use the specified path as the filesystem for the container.
+    :attr http_proxy: Pass proxy environment variables into the container.
+    :attr retry: Number of times to retry pulling/pushing images in case of failure.
+    :attr retry_delay: Duration of delay between retry attempts when pulling/pushing images.
     """
     string image
     dict env = {}
     string? env_file = null
+    bool environment_host = false
     string? entrypoint = null
     string? command = null
     string? user = null
+    string? group = null
+    string[] group_add = []
+    string? working_dir = null
+    dict annotations = {}
+    string[] expose_host_port = []
+    string[] mount = []
+    string[] tmpfs = []
+    bool read_only = false
+    bool? read_only_tmpfs = null
+    string[] add_device = []
+    string[] add_capability = []
+    string[] drop_capability = []
+    string? memory = null
+    int? pids_limit = null
+    string[] ulimit = []
+    string? cgroups_mode = null
+    string? log_driver = null
+    string[] log_opt = []
+    string? pull = null
+    bool run_init = false
+    string? stop_signal = null
+    int? stop_timeout = null
+    string? timezone = null
+    string? notify = null
+    string? auto_update = null
+    bool? start_with_pod = null
+    string? seccomp_profile = null
+    string? mask = null
+    string? unmask = null
+    bool no_new_privileges = false
+    dict sysctl = {}
+    string? rootfs = null
+    bool? http_proxy = null
+    int? retry = null
+    string? retry_delay = null
 end
-Container.volumes [0:] -- podman::container::Volume.container [1]
-"""Create a bind mount."""
 
 Container.pod [0:1] -- Pod.containers [0:]
 """Run container in an existing pod."""
+
+Container.health [0:1] -- podman::container::Health
+"""Healthcheck configuration for the container."""
+
+Container.security_label [0:1] -- podman::container::SecurityLabel
+"""SELinux security label configuration for the container."""
 
 index Container(host, owner, name)
 

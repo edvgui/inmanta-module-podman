@@ -66,15 +66,29 @@ def join(parts: list[str], *, separator: str) -> str:
     return separator.join(parts)
 
 
-def option(name: str, value: str | int | None) -> str | None:
+def option(name: str, value: str | int | bool | None) -> str | None:
     """
     Helper function to create a cli option with the given name and value,
-    or None if the value is None.
+    or None if the value is None.  Booleans are formatted as ``true``/``false``.
 
     :param name: The name of the cli option
     :param value: The value of the cli option
     """
-    return f"--{name}={value}" if value is not None else None
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return f"--{name}={'true' if value else 'false'}"
+    return f"--{name}={value}"
+
+
+def flag(name: str, value: bool | None) -> str | None:
+    """
+    Helper to emit a boolean cli flag when value is true.
+
+    :param name: The name of the cli flag
+    :param value: The value of the cli flag (or None to omit)
+    """
+    return f"--{name}" if value else None
 
 
 def options(name: str, values: typing.Sequence[object]) -> typing.Sequence[str]:
@@ -87,6 +101,67 @@ def options(name: str, values: typing.Sequence[object]) -> typing.Sequence[str]:
     :param values: The list of objects
     """
     return [f"--{name}={value.cli_option}" for value in values]
+
+
+def repeated(name: str, values: typing.Sequence[str]) -> typing.Sequence[str]:
+    """
+    Helper function to emit a repeating cli option, based on a sequence of strings.
+
+    :param name: The name of the cli option
+    :param values: The list of values for the option
+    """
+    return [f"--{name}={value}" for value in values]
+
+
+def health_options(health: object | None) -> typing.Sequence[str]:
+    """
+    Helper function to serialize the healthcheck options into the cli arguments
+    expected by the podman cli.
+
+    :param health: A ``podman::container::Health`` entity, or None.
+    """
+    if health is None:
+        return []
+    return [
+        opt
+        for opt in [
+            option("health-cmd", health.cmd),
+            option("health-interval", health.interval),
+            option("health-retries", health.retries),
+            option("health-timeout", health.timeout),
+            option("health-start-period", health.start_period),
+            option("health-startup-cmd", health.startup_cmd),
+            option("health-startup-interval", health.startup_interval),
+            option("health-startup-retries", health.startup_retries),
+            option("health-startup-success", health.startup_success),
+            option("health-startup-timeout", health.startup_timeout),
+            option("health-log-destination", health.log_destination),
+            option("health-max-log-count", health.max_log_count),
+            option("health-max-log-size", health.max_log_size),
+            option("health-on-failure", health.on_failure),
+        ]
+        if opt is not None
+    ]
+
+
+def security_label_options(label: object | None) -> typing.Sequence[str]:
+    """
+    Helper function to serialize the security label options into the cli
+    arguments expected by the podman cli.  Each option is emitted as a
+    ``--security-opt`` argument.
+
+    :param label: A ``podman::container::SecurityLabel`` entity, or None.
+    """
+    if label is None:
+        return []
+    parts: list[str | None] = [
+        "label=disable" if label.disable else None,
+        f"label=type:{label.type}" if label.type is not None else None,
+        f"label=level:{label.level}" if label.level is not None else None,
+        f"label=filetype:{label.file_type}" if label.file_type is not None else None,
+        "label=nested" if label.nested else None,
+    ]
+    return [f"--security-opt={part}" for part in parts if part is not None]
 
 
 def extra_args(command: str, args: typing.Sequence[object]) -> typing.Sequence[str]:
@@ -165,29 +240,89 @@ def container_run(
     """
     cmd: list[str | None] = [
         "/usr/bin/podman",
+        *repeated("module", container.containers_conf_module),
+        *container.global_args,
         "container",
         "run",
         option("cidfile", cidfile),
-        option("cgroups", cgroups),
+        option("cgroups", cgroups or container.cgroups_mode),
         option("pod-id-file", pod_id_file),
-        option("sdnotify", sdnotify),
-        "--detach" if detach else None,
-        "--replace" if replace else None,
+        option("sdnotify", sdnotify or container.notify),
+        flag("detach", detach),
+        flag("replace", replace),
         *options("network", container.networks),
+        *repeated("network-alias", container.network_alias),
         *options("publish", container.publish),
+        *repeated("expose", container.expose_host_port),
         *options("add-host", container.hosts),
-        "--no-hosts" if container.no_hosts else None,
+        flag("no-hosts", container.no_hosts),
         option("hostname", container.hostname),
+        option("ip", container.ip),
+        option("ip6", container.ip6),
+        *repeated("dns", container.dns),
+        *repeated("dns-search", container.dns_search),
+        *repeated("dns-option", container.dns_option),
         *{f"--label={k}={v}" for k, v in container.labels.items()},
+        *(f"--annotation={k}={v}" for k, v in container.annotations.items()),
         *options("uidmap", container.uidmap),
         *options("gidmap", container.gidmap),
+        option("subuidname", container.sub_uid_map),
+        option("subgidname", container.sub_gid_map),
         option("userns", container.userns),
+        option("shm-size", container.shm_size),
         f"--name={container.name}",
         *options("volume", container.volumes),
+        *repeated("mount", container.mount),
+        *repeated("tmpfs", container.tmpfs),
+        flag("read-only", container.read_only),
+        option("read-only-tmpfs", container.read_only_tmpfs),
+        *repeated("device", container.add_device),
+        *repeated("cap-add", container.add_capability),
+        *repeated("cap-drop", container.drop_capability),
+        option("memory", container.memory),
+        option("pids-limit", container.pids_limit),
+        *repeated("ulimit", container.ulimit),
+        option("log-driver", container.log_driver),
+        *repeated("log-opt", container.log_opt),
+        option("pull", container.pull),
+        flag("init", container.run_init),
+        option("stop-signal", container.stop_signal),
+        option("stop-timeout", container.stop_timeout),
+        option("tz", container.timezone),
+        *health_options(container.health),
         *[f"--env={k}={v}" for k, v in container.env.items()],
         option("env-file", container.env_file),
+        flag("env-host", container.environment_host),
         option("entrypoint", container.entrypoint),
         option("user", container.user),
+        option("group", container.group),
+        *repeated("group-add", container.group_add),
+        option("workdir", container.working_dir),
+        option(
+            "security-opt", "no-new-privileges" if container.no_new_privileges else None
+        ),
+        *security_label_options(container.security_label),
+        option(
+            "security-opt",
+            (
+                f"seccomp={container.seccomp_profile}"
+                if container.seccomp_profile is not None
+                else None
+            ),
+        ),
+        option(
+            "security-opt",
+            f"mask={container.mask}" if container.mask is not None else None,
+        ),
+        option(
+            "security-opt",
+            f"unmask={container.unmask}" if container.unmask is not None else None,
+        ),
+        *[f"--sysctl={k}={v}" for k, v in container.sysctl.items()],
+        option("rootfs", container.rootfs),
+        option("http-proxy", container.http_proxy),
+        option("retry", container.retry),
+        option("retry-delay", container.retry_delay),
         *extra_args("podman-run", container.extra_args),
         *container.podman_args,
         container.image,
@@ -247,22 +382,35 @@ def pod_create(
     """
     cmd: list[str | None] = [
         "/usr/bin/podman",
+        *repeated("module", pod.containers_conf_module),
+        *pod.global_args,
         "pod",
         "create",
         option("infra-conmon-pidfile", infra_conmon_pidfile),
         option("pod-id-file", pod_id_file),
-        option("exit-policy", exit_policy),
-        "--replace" if replace else None,
+        option("exit-policy", exit_policy or pod.exit_policy),
+        flag("replace", replace),
         *options("network", pod.networks),
+        *repeated("network-alias", pod.network_alias),
         *options("publish", pod.publish),
         *options("add-host", pod.hosts),
-        "--no-hosts" if pod.no_hosts else None,
+        flag("no-hosts", pod.no_hosts),
         option("hostname", pod.hostname),
+        option("ip", pod.ip),
+        option("ip6", pod.ip6),
+        *repeated("dns", pod.dns),
+        *repeated("dns-search", pod.dns_search),
+        *repeated("dns-option", pod.dns_option),
+        option("shm-size", pod.shm_size),
         *{f"--label={k}={v}" for k, v in pod.labels.items()},
         *options("uidmap", pod.uidmap),
         *options("gidmap", pod.gidmap),
+        option("subuidname", pod.sub_uid_map),
+        option("subgidname", pod.sub_gid_map),
         option("userns", pod.userns),
+        *options("volume", pod.volumes),
         *extra_args("podman-pod-create", pod.extra_args),
+        *pod.podman_args,
         f"--name={pod.name}",
     ]
     return " ".join(i for i in cmd if i is not None)
