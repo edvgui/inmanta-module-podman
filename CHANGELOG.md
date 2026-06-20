@@ -2,6 +2,7 @@
 
 ## v1.11.1 - ?
 
+- Allow using references in quadlet units
 
 ## v1.11.0 - 2026-05-25
 
