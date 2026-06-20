@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.11.2 - ?
+
+
 ## v1.11.1 - 2026-06-20
 
 - Allow using references in quadlet units
