@@ -143,8 +143,8 @@ implementation container_file_content for QuadletUnitFile:
 
     # Load the content based on the template
     self.content = (
-        std::template("files/systemd_unit.j2")
-        + std::template("podman/service.container.j2")
+        files::jinja("files/systemd_unit.j2")
+        + files::jinja("podman/service.container.j2")
     )
 end
 
@@ -158,8 +158,8 @@ implementation pod_file_content for QuadletUnitFile:
 
     # Load the content based on the template
     self.content = (
-        std::template("files/systemd_unit.j2")
-        + std::template("podman/service.pod.j2")
+        files::jinja("files/systemd_unit.j2")
+        + files::jinja("podman/service.pod.j2")
     )
 end
 
