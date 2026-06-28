@@ -50,6 +50,6 @@ entity Route:
     int metric = 100
 end
 
-index Route(network, destination, gateway)
+index Route(network, destination, metric)
 
 implement Route using std::none
