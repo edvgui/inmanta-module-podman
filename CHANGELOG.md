@@ -2,6 +2,7 @@
 
 ## v1.11.2 - ?
 
+- Fix router index, to include the gateway, allowing multiple routes towards a given destination.
 
 ## v1.11.1 - 2026-06-20
 
