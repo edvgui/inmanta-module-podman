@@ -40,7 +40,7 @@ entity Route:
     This route will be added to every container in this network.
     Only available with the netavark backend.
     cf. https://docs.podman.io/en/stable/markdown/podman-network-create.1.html#route-route
-    
+
     :attr destination: The target cidr
     :attr gateway: The next hop to reach this cidr
     :attr metric: Metric, to prioritize this route over others
@@ -50,6 +50,6 @@ entity Route:
     int metric = 100
 end
 
-index Route(network, destination)
+index Route(network, destinatio, metric)
 
 implement Route using std::none
