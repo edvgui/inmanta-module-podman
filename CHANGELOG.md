@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.11.3 - ?
+
+
 ## v1.11.2 - 2026-06-28
 
 - Fix router index, to include the metric, allowing multiple routes towards a given destination.
