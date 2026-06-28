@@ -223,10 +223,12 @@ class NetworkHandler(
                 # If both current and desired config have a routes list, we should try to match
                 # the routes one-to-one, to avoid unnecessary changes if the order of the routes
                 current_routes_mapping = {
-                    (route["destination"], route["metric"]): route for route in current_routes
+                    (route["destination"], route["metric"]): route
+                    for route in current_routes
                 }
                 desired_routes_mapping = {
-                    (route["destination"], route["metric"]): route for route in desired_routes
+                    (route["destination"], route["metric"]): route
+                    for route in desired_routes
                 }
                 desired_routes_mapping = merge(
                     current_routes_mapping, desired_routes_mapping
