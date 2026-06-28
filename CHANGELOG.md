@@ -2,10 +2,11 @@
 
 ## v1.11.3 - ?
 
+- Fix diffing of bridge routes when destinations are repeated with different metrics.
 
-## v1.11.2 - 2026-06-28
+## v1.11.2 - 2026-06-28 (YANKED)
 
-- Fix router index, to include the metric, allowing multiple routes towards a given destination.
+- Fix route index, to include the metric, allowing multiple routes towards a given destination.
 
 ## v1.11.1 - 2026-06-20
 
