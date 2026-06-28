@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.11.3 - ?
+## v1.11.3 - 2026-06-28
 
 - Fix diffing of bridge routes when destinations are repeated with different metrics.
 
