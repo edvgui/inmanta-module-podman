@@ -123,6 +123,20 @@ entity SystemdContainer extends SystemdService:
 end
 SystemdContainer.container [1] -- podman::Container
 
+SystemdContainer.dependencies [0:] -- SystemdService.dependents [0:]
+"""
+Other systemd services that this container requires to be running in order to
+work properly.  Each dependency is translated into a ``Requires=`` and an
+``After=`` entry in the container unit file, so that the dependencies are
+started before this container, and this container is stopped (before any of its
+dependencies) whenever one of them is stopped.
+
+This works both for long-running containers (e.g. an application depending on a
+database) and for calendar-triggered containers (e.g. a database dump depending
+on the database): in the latter case the dependencies are pulled in when the
+timer activates the service.
+"""
+
 
 entity SystemdAutoUpdate extends SystemdService:
     """
