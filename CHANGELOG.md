@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.12.1 - ?
+
+
 ## v1.12.0 - 2026-07-11
 
 - Allow expressing dependencies between container services (`Requires=`/`After=`)
