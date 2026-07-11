@@ -56,6 +56,10 @@ implementation unit_file for SystemdContainer:
     # Set the variable that is required by the container.service.j2 template
     container = self.container
 
+    # Services that this container requires to be running, translated into
+    # Requires= and After= entries in the unit file.
+    dependency_services = [dependency.service_name for dependency in self.dependencies]
+
     # Create the service unit for the pod
     self.unit = files::SystemdUnitFile(
         path=files::path_join(self._systemd_config_dir.path, self.service_name),
@@ -73,12 +77,14 @@ implementation unit_file for SystemdContainer:
                 self.listen_stream is defined ? [self.socket_name] : [],
             ],
             requires_mounts_for=["%t/containers"],
+            requires=dependency_services,
             binds_to=pod_service is defined
                 ? [pod_service.service_name]
                 : [],
             after=[
                 pod_service is defined ? [pod_service.service_name] : [],
                 user == "root" ? "network-online.target" : "podman-user-wait-network-online.service",
+                dependency_services,
             ],
             part_of=[
                 self.on_calendar is defined ? [self.timer_name] : [],
@@ -147,6 +153,10 @@ implementation quadlet_file for SystemdContainer:
         ? pod._systemd_service
         : null
 
+    # Services that this container requires to be running, translated into
+    # Requires= and After= entries in the unit file.
+    dependency_services = [dependency.service_name for dependency in self.dependencies]
+
     std::assert(self.systemd_container_dir != null, "The attribute systemd_container_dir must be set when quadlet is true.")
     std::assert(self._container_config_dir is defined, "Compiler error, self._container_config_dir must be set.")
     self.unit = QuadletUnitFile(
@@ -166,11 +176,13 @@ implementation quadlet_file for SystemdContainer:
                 self.on_calendar is defined ? [self.timer_name] : [],
                 self.listen_stream is defined ? [self.socket_name] : [],
             ],
+            requires=dependency_services,
             binds_to=pod_service is defined
                 ? [pod_service.service_name]
                 : [],
             after=[
                 pod_service is defined ? [pod_service.service_name] : [],
+                dependency_services,
             ],
             part_of=[
                 self.on_calendar is defined ? [self.timer_name] : [],
