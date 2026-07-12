@@ -2,6 +2,7 @@
 
 ## v1.13.1 - ?
 
+- Fix ImageFromRegistry dryrun by checking digest of registry image
 
 ## v1.13.0 - 2026-07-12
 
