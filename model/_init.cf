@@ -334,9 +334,13 @@ end
 entity ImageFromRegistry extends Image:
     """
     Pull an image from a registry
+
+    :attr pull_timeout: The maximum duration, in seconds, that the pull command
+        is allowed to take before it is aborted.  When null, no timeout is applied.
     """
     string? transport = null
     string? digest = null
+    int? pull_timeout = null
 end
 
 

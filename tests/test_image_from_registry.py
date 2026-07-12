@@ -20,6 +20,8 @@ import json
 
 from pytest_inmanta.plugin import Project
 
+import inmanta.const
+
 
 def test_model(
     project: Project, purged: bool = False, digest: str | None = None
@@ -53,6 +55,49 @@ def test_model(
     """
 
     project.compile(model, no_dedent=False)
+
+
+def test_pull_timeout(project: Project) -> None:
+    # Pull an image from a registry that can not be reached, with a very
+    # short timeout.  The pull command hangs trying to connect, so the
+    # timeout aborts it and the deployment must fail explicitly.
+    model = """
+        import podman
+        import std
+        import mitogen
+
+
+        host = std::Host(
+            name="localhost",
+            remote_agent=true,
+            ip="127.0.0.1",
+            os=std::linux,
+            via=mitogen::Local(),
+        )
+
+        podman::ImageFromRegistry(
+            host=host,
+            # RFC 5737 TEST-NET-1 address, guaranteed not to be routable, so the
+            # pull hangs on connection until our timeout kicks in.
+            name="192.0.2.1:5000/inmanta/does-not-exist:latest",
+            pull_timeout=1,
+        )
+    """
+
+    project.compile(model, no_dedent=False)
+
+    resource = project.get_resource("podman::ImageFromRegistry")
+    assert resource is not None
+    assert resource.pull_timeout == 1
+
+    result = project.deploy_resource_v2(
+        "podman::ImageFromRegistry",
+        expected_status=inmanta.const.ResourceState.failed,
+    )
+
+    # The failure must clearly point at the pull command timing out after the
+    # configured duration.
+    result.assert_has_logline(r"podman.*pull.*timed out after 1 seconds")
 
 
 def test_deploy(project: Project) -> None:
