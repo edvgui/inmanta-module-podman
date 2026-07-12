@@ -3,6 +3,8 @@
 ## v1.13.0 - ?
 
 - Add a configurable `pull_timeout` to `podman::ImageFromRegistry` (defaults to null, i.e. no timeout)
+- Add a configurable `build_timeout` to `podman::ImageFromSource` (defaults to null, i.e. no timeout)
+- Apply a timeout to the internal `whoami` command so a hung connection can no longer stall a deployment indefinitely
 
 
 ## v1.12.0 - 2026-07-11

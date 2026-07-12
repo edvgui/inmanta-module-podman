@@ -62,7 +62,7 @@ class HandlerABC(inmanta_plugins.mitogen.abc.Handler[ABC]):
         if hasattr(self.proxy, "_whoami"):
             return getattr(self.proxy, "_whoami")
 
-        stdout, stderr, ret = self.proxy.run("whoami")
+        stdout, stderr, ret = self.proxy.run("whoami", timeout=5)
         if ret == 0:
             setattr(self.proxy, "_whoami", stdout)
             return stdout
