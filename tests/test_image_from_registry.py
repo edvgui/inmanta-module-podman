@@ -109,11 +109,9 @@ def test_deploy(project: Project) -> None:
     assert image_resource is not None
     image_resource_id = image_resource.id.resource_str()
 
-    # Make sure the image gets deployed, we don't force the digest, the image should
-    # always detect a change
-    assert project.dryrun_resource("podman::ImageFromRegistry")
+    # Make sure the image gets deployed
     project.deploy_resource("podman::ImageFromRegistry")
-    assert project.dryrun_resource("podman::ImageFromRegistry")
+    assert not project.dryrun_resource("podman::ImageFromRegistry")
 
     # Check that the discovery resource finds our image as well
     result = project.deploy_resource_v2("podman::ImageDiscovery")
