@@ -248,9 +248,10 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
     agent="host.name",
 )
 class ImageFromRegistryResource(ImageResource):
-    fields = ("transport", "digest")
+    fields = ("transport", "digest", "pull_timeout")
     transport: str | None
     digest: str | None
+    pull_timeout: int | None
 
 
 @inmanta.agent.handler.provider("podman::ImageFromRegistry", "")
@@ -288,7 +289,7 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
             ctx,
             resource,
             command=["podman", "image", "pull", source],
-            timeout=None,
+            timeout=resource.pull_timeout,
         )
 
         # If the command failed, something went wrong
