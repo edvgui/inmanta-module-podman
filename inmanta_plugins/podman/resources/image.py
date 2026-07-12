@@ -95,7 +95,7 @@ class ImageHandler(
             ctx,
             resource,
             command=command,
-            timeout=5,
+            timeout=30,
         )
 
         # If we receive an empty list, our network doesn't exist
