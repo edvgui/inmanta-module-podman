@@ -322,12 +322,15 @@ entity ImageFromSource extends Image:
     :attr squash_all: Squash all of the new image's layers (including those inherited from a base image) into a single new layer.
     :attr pull: Pull image policy. (always, true, missing, never, false, newer)
     :attr context: The build context directory can be specified as the http(s) URL of an archive, git repository or Containerfile.
+    :attr build_timeout: The maximum duration, in seconds, that the build command
+        is allowed to take before it is aborted.  When null, no timeout is applied.
     """
     bool? squash = null
     bool? squash_all = null
     string? pull = null
     string? context = null
     string? file = null
+    int? build_timeout = null
 end
 
 

@@ -133,9 +133,11 @@ class ImageFromSourceResource(ImageResource):
     fields = (
         "options",
         "context",
+        "build_timeout",
     )
     options: list[str]
     context: str | None
+    build_timeout: int | None
 
     @classmethod
     def get_options(
@@ -206,7 +208,7 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
             ctx,
             resource,
             command=cmd,
-            timeout=None,
+            timeout=resource.build_timeout,
         )
 
         # If the command failed, something went wrong

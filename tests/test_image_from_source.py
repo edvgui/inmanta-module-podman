@@ -51,6 +51,50 @@ def test_model(project: Project, purged: bool = False) -> None:
     project.compile(model, no_dedent=False)
 
 
+def test_build_timeout(project: Project) -> None:
+    # Build an image from a context that can not be reached, with a very
+    # short timeout.  The build command hangs trying to fetch the context,
+    # so the timeout aborts it and the deployment must fail explicitly.
+    model = """
+        import podman
+        import std
+        import mitogen
+
+
+        host = std::Host(
+            name="localhost",
+            remote_agent=true,
+            ip="127.0.0.1",
+            os=std::linux,
+            via=mitogen::Local(),
+        )
+
+        podman::ImageFromSource(
+            host=host,
+            name="inmanta/does-not-exist:latest",
+            # RFC 5737 TEST-NET-1 address, guaranteed not to be routable, so the
+            # build hangs fetching the context until our timeout kicks in.
+            context="https://192.0.2.1/inmanta/does-not-exist.git",
+            build_timeout=1,
+        )
+    """
+
+    project.compile(model, no_dedent=False)
+
+    resource = project.get_resource("podman::ImageFromSource")
+    assert resource is not None
+    assert resource.build_timeout == 1
+
+    result = project.deploy_resource_v2(
+        "podman::ImageFromSource",
+        expected_status=inmanta.const.ResourceState.failed,
+    )
+
+    # The failure must clearly point at the build command timing out after the
+    # configured duration.
+    result.assert_has_logline(r"podman.*build.*timed out after 1 seconds")
+
+
 def test_deploy(project: Project) -> None:
     # Build the alpine image
     test_model(project, purged=False)
