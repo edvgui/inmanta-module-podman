@@ -334,6 +334,7 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
             # If we have an image locally, but we don't have any desired digest
             # then we verify with the remote registry if the digest we have is
             # accurate.
+            desired = desired.clone()
             desired.digest = self.inspect_remote_image(ctx, desired)["digest"]
 
         return super().calculate_diff(ctx, current, desired)
