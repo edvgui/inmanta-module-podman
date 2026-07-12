@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.13.2 - ?
+
+
 ## v1.13.1 - 2026-07-12
 
 - Fix ImageFromRegistry dryrun by checking digest of registry image
