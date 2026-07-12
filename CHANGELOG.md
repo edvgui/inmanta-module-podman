@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.13.0 - ?
+## v1.13.0 - 2026-07-12
 
 - Add a configurable `pull_timeout` to `podman::ImageFromRegistry` (defaults to null, i.e. no timeout)
 - Add a configurable `build_timeout` to `podman::ImageFromSource` (defaults to null, i.e. no timeout)
