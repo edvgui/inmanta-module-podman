@@ -27,7 +27,7 @@ import inmanta.resources
 import inmanta_plugins.podman.resources.abc
 
 
-def valid_digest(digest: str, repo_digests: list[str]) -> bool:
+def valid_digest(digest: str | None, repo_digests: list[str]) -> bool:
     """
     Check if the given digest value is a match for one of the repo digests
     entries.  The format of the repo digests is <repository>:<tag>@<digest>
@@ -53,7 +53,8 @@ class ImageHandler(
     inmanta_plugins.podman.resources.abc.HandlerABC[IR],
     inmanta.agent.handler.CRUDHandler[IR],
 ):
-    def inspect_image(
+
+    def inspect_local_image(
         self,
         ctx: inmanta.agent.handler.HandlerContext,
         resource: IR,
@@ -82,6 +83,55 @@ class ImageHandler(
             raise RuntimeError("Failed to inspect image")
 
         return json.loads(stdout)[0]
+
+    def inspect_remote_image(
+        self,
+        ctx: inmanta.agent.handler.HandlerContext,
+        resource: IR,
+    ) -> dict:
+        # Run the inspect command on the remote host
+        command = ["podman", "manifest", "inspect", resource.name]
+        stdout, stderr, ret = self.run_command(
+            ctx,
+            resource,
+            command=command,
+            timeout=30,
+        )
+
+        # If we receive an empty list, our network doesn't exist
+        if stdout.strip() == "[]":
+            ctx.info("%(stderr)s", stderr=stderr)
+            raise LookupError()
+
+        # If the command failed, something went wrong
+        if ret != 0:
+            ctx.error(
+                "%(stderr)s",
+                exit_code=ret,
+                stderr=stderr,
+            )
+            raise RuntimeError("Failed to inspect image")
+
+        # Filter all manifest to keep only the one matching our platform
+        os, arch = self.get_platform(ctx, resource)
+        manifests = json.loads(stdout)
+        for manifest in manifests["manifests"]:
+            match manifest:
+                case {
+                    "platform": {
+                        "os": str() as man_os,
+                        "architecture": str() as man_arch,
+                    }
+                } if (
+                    os == man_os and arch == man_arch
+                ):
+                    return manifest
+                case _:
+                    continue
+        else:
+            raise LookupError(
+                f"Could not find any manifest for image {resource.name} on platform {os}/{arch}"
+            )
 
     def calculate_diff(
         self,
@@ -180,7 +230,7 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
         resource: ImageFromSourceResource,
     ) -> None:
         try:
-            existing_image = self.inspect_image(ctx, resource)
+            existing_image = self.inspect_local_image(ctx, resource)
         except LookupError:
             # The image was not found
             raise inmanta.agent.handler.ResourcePurged()
@@ -238,7 +288,7 @@ class ImageFromSourceHandler(ImageHandler[ImageFromSourceResource]):
 
         if not valid_digest(
             changes["digest"]["current"],
-            self.inspect_image(ctx, resource)["RepoDigests"],
+            self.inspect_local_image(ctx, resource)["RepoDigests"],
         ):
             # If the digest has changed, we have a different image
             ctx.set_updated()
@@ -264,7 +314,7 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
         resource: ImageFromRegistryResource,
     ) -> None:
         try:
-            existing_image = self.inspect_image(ctx, resource)
+            existing_image = self.inspect_local_image(ctx, resource)
         except LookupError:
             # The image was not found
             raise inmanta.agent.handler.ResourcePurged()
@@ -273,6 +323,21 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
             # Only detect a different digest if the desired digest (which may be None)
             # is not part of the image ones
             resource.digest = existing_image["Digest"]
+
+    def calculate_diff(
+        self,
+        ctx: inmanta.agent.handler.HandlerContext,
+        current: ImageFromRegistryResource,
+        desired: ImageFromRegistryResource,
+    ) -> dict[str, dict[str, typing.Any]]:
+        if current.digest is not None and desired.digest is None:
+            # If we have an image locally, but we don't have any desired digest
+            # then we verify with the remote registry if the digest we have is
+            # accurate.
+            desired = desired.clone()
+            desired.digest = self.inspect_remote_image(ctx, desired)["digest"]
+
+        return super().calculate_diff(ctx, current, desired)
 
     def pull_image(
         self,
@@ -321,7 +386,7 @@ class ImageFromRegistryHandler(ImageHandler[ImageFromRegistryResource]):
 
         if not valid_digest(
             changes["digest"]["current"],
-            self.inspect_image(ctx, resource)["RepoDigests"],
+            self.inspect_local_image(ctx, resource)["RepoDigests"],
         ):
             # If the digest has changed, we have a different image
             ctx.set_updated()
