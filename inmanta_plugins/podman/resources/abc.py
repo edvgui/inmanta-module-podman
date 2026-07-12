@@ -118,3 +118,26 @@ class HandlerABC(inmanta_plugins.mitogen.abc.Handler[ABC]):
         )
 
         return stdout, stderr, return_code
+
+    def get_platform(
+        self,
+        ctx: inmanta.agent.handler.HandlerContext,
+        resource: ABC,
+    ) -> tuple[str, str]:
+        """
+        Check the os and architecture of the host on which the resource is being deployed.
+        """
+        # Run the info command on the remote host
+        command = ["podman", "info", "--format", "{{.Host.OS}}/{{.Host.Arch}}"]
+        stdout, stderr, ret = self.run_command(
+            ctx,
+            resource,
+            command=command,
+            timeout=5,
+        )
+        platform_string = stdout.strip()
+        if "/" not in platform_string:
+            raise ValueError(f"Unexpected output format: {platform_string}")
+
+        target_os, target_arch = platform_string.split("/", 1)
+        return target_os.lower(), target_arch.lower()
