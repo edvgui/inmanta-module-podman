@@ -1,2 +1,2 @@
-inmanta-dev-dependencies[module]==2.206.0
+inmanta-dev-dependencies[module]==2.207.0
 pytest-inmanta>=2
