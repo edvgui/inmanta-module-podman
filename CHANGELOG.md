@@ -2,6 +2,8 @@
 
 ## v1.13.2 - ?
 
+- Allow publishing the same container port more than once (e.g. over tcp and udp, or on several host ports or ips): `Publish` is now indexed on all of its options.
+- Enclose an ipv6 `Publish.ip` in brackets in the cli option, as podman expects.
 
 ## v1.13.1 - 2026-07-12
 

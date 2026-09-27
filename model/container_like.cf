@@ -89,6 +89,9 @@ entity Publish:
     match the number of host ports in the range.
 
     If host IP is set to 0.0.0.0 or not set at all, the port is bound on all IPs on the host.
+    Every option left unset is left out of the cli option, so that podman picks
+    its default for it.  A container port can be published more than once, e.g.
+    over tcp and udp, or on several host ports or ips.
 
     :attr ip: The ip to bind the port to
     :attr host_port: A port, or range of ports (in the format 123-456) to map on the
@@ -105,7 +108,7 @@ entity Publish:
     string cli_option
 end
 
-index Publish(container_like, container_port)
+index Publish(container_like, ip, host_port, container_port, protocol)
 
 
 entity IdMap:
@@ -178,7 +181,9 @@ implementation publish_cli_option for Publish:
     to the host network.
     """
     host = self.host_port is defined ? f"{self.host_port}:" : ":"
-    host_with_ip = self.ip is defined ? f"{self.ip}:{host}" : host
+    # An ipv6 address must be enclosed in brackets, to tell it apart from the ports
+    ip = self.ip is defined ? (std::validate_type("ipaddress.IPv6Address", self.ip) ? f"[{self.ip}]" : self.ip) : null
+    host_with_ip = ip is defined ? f"{ip}:{host}" : host
     port = host_with_ip != ":" ? f"{host_with_ip}{self.container_port}" : self.container_port
 
     self.cli_option = self.protocol is defined ? f"{port}/{self.protocol}" : port
