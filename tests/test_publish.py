@@ -21,9 +21,7 @@ from pytest_inmanta.plugin import Project
 
 def test_publish_same_container_port(project: Project) -> None:
     """
-    A container port can be published more than once: over both tcp and udp
-    (e.g. dns), or on several host ports and addresses.  Every option left
-    unset is left to podman's default.
+    A container port can be published more than once.
     """
     model = """
         import mitogen
