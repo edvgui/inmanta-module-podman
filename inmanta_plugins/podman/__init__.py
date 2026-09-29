@@ -16,6 +16,7 @@ limitations under the License.
 Contact: edvgui@gmail.com
 """
 
+import ipaddress
 import shlex
 import typing
 
@@ -64,6 +65,21 @@ def inline_options(options: dict) -> str:
     :param options: The options dict to serialize into a string.
     """
     return ",".join(f"{k}={v}" for k, v in options.items() if v is not None)
+
+
+@inmanta.plugins.plugin()
+def format_ip(ip: str) -> str:
+    """
+    Format an ip address the way podman expects it in cli options:
+    ipv6 addresses are wrapped in brackets, other values are returned as-is.
+
+    :param ip: The ip address to format.
+    """
+    try:
+        address = ipaddress.ip_address(ip)
+    except ValueError:
+        return ip
+    return f"[{ip}]" if address.version == 6 else ip
 
 
 @inmanta.plugins.plugin()

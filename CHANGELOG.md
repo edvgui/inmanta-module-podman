@@ -2,7 +2,8 @@
 
 ## v1.13.2 - ?
 
-- Allow publishing the same container port more than once (e.g. tcp and udp)
+- Allow publishing the same container port once per protocol (e.g. tcp and udp)
+- Wrap ipv6 addresses in brackets when publishing ports
 
 ## v1.13.1 - 2026-07-12
 

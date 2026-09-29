@@ -16,12 +16,16 @@ limitations under the License.
 Contact: edvgui@gmail.com
 """
 
+import pytest
 from pytest_inmanta.plugin import Project
+
+import inmanta.ast
+from inmanta_plugins.podman import format_ip
 
 
 def test_publish_same_container_port(project: Project) -> None:
     """
-    A container port can be published more than once.
+    A container port can be published once per protocol.
     """
     model = """
         import mitogen
@@ -47,11 +51,6 @@ def test_publish_same_container_port(project: Project) -> None:
                     protocol="tcp",
                 ),
                 podman::container_like::Publish(
-                    host_port="53",
-                    container_port="53",
-                    protocol="udp",
-                ),
-                podman::container_like::Publish(
                     ip="127.0.0.1",
                     host_port="5353",
                     container_port="53",
@@ -59,9 +58,8 @@ def test_publish_same_container_port(project: Project) -> None:
                 ),
                 podman::container_like::Publish(
                     ip="::1",
-                    host_port="5353",
-                    container_port="53",
-                    protocol="udp",
+                    host_port="8080",
+                    container_port="80",
                 ),
             ],
         )
@@ -74,8 +72,55 @@ def test_publish_same_container_port(project: Project) -> None:
         [
             "53",
             "53:53/tcp",
-            "53:53/udp",
             "127.0.0.1:5353:53/udp",
-            "[::1]:5353:53/udp",
+            "[::1]:8080:80",
         ]
     )
+
+
+def test_publish_same_container_port_and_protocol(project: Project) -> None:
+    """
+    A container port can not be published twice with the same protocol.
+    """
+    model = """
+        import mitogen
+        import podman
+        import podman::container_like
+        import std
+
+        host = std::Host(
+            name="localhost",
+            os=std::linux,
+            via=mitogen::Local(),
+        )
+
+        podman::Container(
+            host=host,
+            name="dns",
+            image="docker.io/adguard/adguardhome:latest",
+            publish=[
+                podman::container_like::Publish(
+                    ip="127.0.0.1",
+                    host_port="53",
+                    container_port="53",
+                    protocol="udp",
+                ),
+                podman::container_like::Publish(
+                    ip="::1",
+                    host_port="53",
+                    container_port="53",
+                    protocol="udp",
+                ),
+            ],
+        )
+    """
+
+    with pytest.raises(inmanta.ast.CompilerException):
+        project.compile(model, no_dedent=False)
+
+
+def test_format_ip() -> None:
+    assert format_ip("127.0.0.1") == "127.0.0.1"
+    assert format_ip("::1") == "[::1]"
+    assert format_ip("fd00::1") == "[fd00::1]"
+    assert format_ip("[::1]") == "[::1]"
