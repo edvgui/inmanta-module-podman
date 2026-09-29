@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.13.2 - ?
+## v1.13.2 - 2026-09-29
 
 - Allow publishing the same container port once per protocol (e.g. tcp and udp)
 - Wrap ipv6 addresses in brackets when publishing ports
