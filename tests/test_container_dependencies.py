@@ -259,19 +259,23 @@ def test_deploy_with_dependencies(project: Project) -> None:
         dry_run_result.assert_has_no_changes()
 
 
-def test_dependency_units(project: Project) -> None:
+def test_unmanaged_dependency(project: Project) -> None:
     """
-    A container can require systemd units that are not managed as podman
-    services, by name, in a service unit as well as in a quadlet unit.
+    A container can require a systemd unit that is not managed by this module,
+    in a service unit as well as in a quadlet unit, next to managed services.
     """
     for quadlet in [False, True]:
         model = build_model(quadlet=quadlet).replace(
             "dependencies=[db_service],",
-            'dependencies=[db_service], dependency_units=["wait-mount.service"],',
+            "dependencies=[\n"
+            "                db_service,\n"
+            '                podman::services::UnmanagedSystemdUnit(service_name="wait-mount.service"),\n'
+            "            ],",
         )
         project.compile(model, no_dedent=False)
 
         content = _dependent_unit_content(project, quadlet=quadlet)
         assert "Requires=container-postgresql-server.service" in content
+        assert "After=container-postgresql-server.service" in content
         assert "Requires=wait-mount.service" in content
         assert "After=wait-mount.service" in content

@@ -2,7 +2,7 @@
 
 ## v1.13.3 - ?
 
-- Add `dependency_units` to `podman::services::SystemdContainer`, to require systemd units not managed by this module
+- Add `podman::services::UnmanagedSystemdUnit`, to make a `SystemdContainer` depend on a systemd unit this module doesn't manage: `dependencies` now accepts any `SystemdUnitABC`
 
 ## v1.13.2 - 2026-09-29
 

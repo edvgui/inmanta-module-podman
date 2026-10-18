@@ -36,7 +36,28 @@ QuadletUnitFile.container [0:1] -- Container
 QuadletUnitFile.pod [0:1] -- Pod
 
 
-entity SystemdService:
+entity SystemdUnitABC:
+    """
+    A systemd unit that a container service can depend on, see the
+    dependencies relation of SystemdContainer.
+
+    :attr service_name: The name of the unit, as its dependents refer to it in
+        their ``Requires=`` and ``After=`` entries (e.g. my-app.service).
+    """
+    string service_name
+end
+
+
+entity UnmanagedSystemdUnit extends SystemdUnitABC:
+    """
+    A systemd unit that is not managed by this module (e.g. a unit deployed by
+    another module, or by hand), that a container service can depend on.  It
+    is only referred to by its name, nothing is deployed for it.
+    """
+end
+
+
+entity SystemdService extends SystemdUnitABC:
     """
     A systemd service is an entity that will be refined into a systemd config file.
     Each container or pod that is part of the service will also have its own systemd
@@ -72,7 +93,7 @@ entity SystemdService:
     :attr quadlet: Whether to generate a quadlet file instead of a systemd unit
 
     :attr service_name: Attribute used internally to save the name of the top-level
-        service to manage.
+        service to manage (inherited from SystemdUnitABC).
     :attr timer_name: Attribute used internally to save the name of the top-level
         timer to manage.  It is derived from the service_name attribute, swaping its
         .service suffix for a .timer suffix.
@@ -95,7 +116,6 @@ entity SystemdService:
     bool enabled = true
     bool quadlet = false
 
-    string service_name
     string timer_name
     string socket_name
     string unit_name
@@ -119,21 +139,15 @@ SystemdPod.pod [1] -- podman::Pod
 entity SystemdContainer extends SystemdService:
     """
     Systemd service that is composed of a single container.
-
-    :attr dependency_units: The names of other systemd units, not managed by
-        this module, that this container requires to be running (e.g. a unit
-        waiting for a mount).  Like the dependencies relation, each one is
-        translated into a ``Requires=`` and an ``After=`` entry in the
-        container unit file.
     """
-    string[] dependency_units = []
 end
 SystemdContainer.container [1] -- podman::Container
 
-SystemdContainer.dependencies [0:] -- SystemdService.dependents [0:]
+SystemdContainer.dependencies [0:] -- SystemdUnitABC.dependents [0:]
 """
-Other systemd services that this container requires to be running in order to
-work properly.  Each dependency is translated into a ``Requires=`` and an
+Other systemd units that this container requires to be running in order to
+work properly: services managed by this module, or units it doesn't manage
+(UnmanagedSystemdUnit).  Each dependency is translated into a ``Requires=`` and an
 ``After=`` entry in the container unit file, so that the dependencies are
 started before this container, and this container is stopped (before any of its
 dependencies) whenever one of them is stopped.
@@ -178,5 +192,6 @@ implementation pod_file_content for QuadletUnitFile:
     )
 end
 
+implement UnmanagedSystemdUnit using std::none
 implement QuadletUnitFile using container_file_content when self.container is defined
 implement QuadletUnitFile using pod_file_content when self.pod is defined
