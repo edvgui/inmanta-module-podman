@@ -119,7 +119,14 @@ SystemdPod.pod [1] -- podman::Pod
 entity SystemdContainer extends SystemdService:
     """
     Systemd service that is composed of a single container.
+
+    :attr dependency_units: The names of other systemd units, not managed by
+        this module, that this container requires to be running (e.g. a unit
+        waiting for a mount).  Like the dependencies relation, each one is
+        translated into a ``Requires=`` and an ``After=`` entry in the
+        container unit file.
     """
+    string[] dependency_units = []
 end
 SystemdContainer.container [1] -- podman::Container
 

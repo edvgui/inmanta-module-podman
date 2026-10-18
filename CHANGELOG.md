@@ -2,6 +2,7 @@
 
 ## v1.13.3 - ?
 
+- Add `dependency_units` to `podman::services::SystemdContainer`, to require systemd units not managed by this module
 
 ## v1.13.2 - 2026-09-29
 
