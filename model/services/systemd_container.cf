@@ -126,7 +126,7 @@ implementation unit_file for SystemdContainer:
             notify_access="all",
         ),
         install=Install(
-            wanted_by=["default.target"],
+            wanted_by=["default.target", [unit.service_name for unit in self.wanted_by]],
         ),
         send_event=true,
         purged=self.state == "removed",
@@ -191,7 +191,7 @@ implementation quadlet_file for SystemdContainer:
             on_failure=self.on_failure,
         ),
         install=Install(
-            wanted_by=["default.target"],
+            wanted_by=["default.target", [unit.service_name for unit in self.wanted_by]],
         ),
         container=self.container,
         send_event=true,

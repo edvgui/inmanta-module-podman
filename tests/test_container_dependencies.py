@@ -279,3 +279,60 @@ def test_unmanaged_dependency(project: Project) -> None:
         assert "After=container-postgresql-server.service" in content
         assert "Requires=wait-mount.service" in content
         assert "After=wait-mount.service" in content
+
+
+def test_wanted_by(project: Project) -> None:
+    """
+    A container can be pulled in by other units on top of default.target
+    (``WantedBy=``), e.g. a mount it needs, so that it is started whenever
+    that unit becomes active.  Both in a plain unit file and in a quadlet one.
+    """
+    for quadlet in [False, True]:
+        container_dir = (
+            'systemd_container_dir="/tmp/containers/systemd",' if quadlet else ""
+        )
+        project.compile(
+            f"""
+            import podman
+            import podman::services
+            import mitogen
+            import std
+
+            host = std::Host(
+                name="localhost",
+                remote_agent=true,
+                ip="127.0.0.1",
+                os=std::linux,
+                via=mitogen::Local(),
+            )
+
+            app = podman::Container(
+                host=host,
+                name="my-app",
+                image="docker.io/library/nginx:latest",
+            )
+
+            podman::services::SystemdContainer(
+                container=app,
+                state="stopped",
+                systemd_unit_dir="/tmp/systemd/user",
+                {container_dir}
+                systemctl_command=["systemctl", "--user"],
+                quadlet={"true" if quadlet else "false"},
+                wanted_by=[
+                    podman::services::UnmanagedSystemdUnit(
+                        service_name="mnt-backups.mount",
+                    ),
+                ],
+            )
+            """,
+            no_dedent=False,
+        )
+
+        content = _dependent_unit_content(project, quadlet=quadlet)
+        assert (
+            "[Install]\nWantedBy=default.target\nWantedBy=mnt-backups.mount\n"
+            in content
+        )
+        # Pulled in by the unit, not a dependency of the container
+        assert "Requires=mnt-backups.mount" not in content

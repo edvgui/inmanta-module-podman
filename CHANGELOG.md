@@ -2,6 +2,7 @@
 
 ## v1.13.4 - ?
 
+- Add `podman::services::SystemdContainer.wanted_by`, other units that pull the container in (`WantedBy=`) on top of `default.target`, e.g. a mount it needs
 
 ## v1.13.3 - 2026-10-18
 
