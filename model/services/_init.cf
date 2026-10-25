@@ -158,6 +158,15 @@ on the database): in the latter case the dependencies are pulled in when the
 timer activates the service.
 """
 
+SystemdContainer.wanted_by [0:] -- SystemdUnitABC
+"""
+Other systemd units that pull this container in, on top of default.target:
+each one is added to the ``WantedBy=`` entry of the container unit file, so
+that the container is started whenever that unit becomes active (e.g. a mount
+the container needs, an UnmanagedSystemdUnit).  This doesn't make the
+container depend on them, see dependencies for that.
+"""
+
 
 entity SystemdAutoUpdate extends SystemdService:
     """
