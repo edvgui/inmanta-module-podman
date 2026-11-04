@@ -305,3 +305,58 @@ def test_deploy(project: Project) -> None:
             }
         )
         dry_run_result.assert_has_no_changes()
+
+
+def quadlet_unit_content(project: Project, on_calendar: str | None) -> str:
+    project.compile(f"""
+        import podman
+        import podman::services
+        import mitogen
+        import std
+
+        container = podman::Container(
+            host=std::Host(
+                name="localhost",
+                remote_agent=true,
+                ip="127.0.0.1",
+                os=std::linux,
+                via=mitogen::Local(),
+            ),
+            name="app",
+            image="docker.io/library/alpine:latest",
+        )
+
+        podman::services::SystemdContainer(
+            container=container,
+            state="stopped",
+            enabled=true,
+            systemd_unit_dir="/tmp/systemd/user",
+            systemd_container_dir="/tmp/containers/systemd",
+            systemctl_command=["systemctl", "--user"],
+            on_calendar={repr(on_calendar) if on_calendar else "null"},
+            quadlet=true,
+        )
+        """)
+    return next(
+        r.content
+        for r in project.resources.values()
+        if getattr(r, "path", None) == "/tmp/containers/systemd/container-app.container"
+    )
+
+
+def test_restart_on_failure(project: Project) -> None:
+    """
+    A long-running container is restarted when it fails, e.g. when a service it
+    needs at startup is not reachable yet.
+    """
+    content = quadlet_unit_content(project, on_calendar=None)
+    assert "[Service]\nRestart=on-failure\nRestartSec=10\n" in content
+
+
+def test_no_restart_for_timer(project: Project) -> None:
+    """
+    A container started by a timer is not restarted when it fails, it runs again
+    on its next trigger.
+    """
+    content = quadlet_unit_content(project, on_calendar="daily")
+    assert "Restart=" not in content
