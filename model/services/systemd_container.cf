@@ -190,6 +190,10 @@ implementation quadlet_file for SystemdContainer:
             ],
             on_failure=self.on_failure,
         ),
+        # A container started by a timer runs again on its next trigger
+        service=self.on_calendar is defined
+            ? null
+            : Service(restart="on-failure", restart_sec=10),
         install=Install(
             wanted_by=["default.target", [unit.service_name for unit in self.wanted_by]],
         ),

@@ -2,6 +2,7 @@
 
 ## v1.13.5 - ?
 
+- Restart a quadlet container service when it fails (`Restart=on-failure`, `RestartSec=10`), like the non-quadlet one already did, unless it runs on a timer
 
 ## v1.13.4 - 2026-10-25
 
