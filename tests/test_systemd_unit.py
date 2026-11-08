@@ -133,7 +133,11 @@ def user_quadlet() -> collections.abc.Iterator[str]:
     if shutil.which("podman") is None:
         pytest.skip("Podman is not installed")
     systemctl = ["systemctl", "--user"]
-    if subprocess.run([*systemctl, "is-system-running"]).returncode not in (0, 1):
+    # The return code doesn't distinguish a degraded manager from a missing one
+    status = subprocess.run(
+        [*systemctl, "is-system-running"], capture_output=True, text=True
+    ).stdout.strip()
+    if status not in ("running", "degraded"):
         pytest.skip("No systemd user manager to test with")
 
     name = f"inmanta-podman-test-{uuid.uuid4().hex[:8]}"
