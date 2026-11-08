@@ -69,8 +69,9 @@ entity SystemdService extends SystemdUnitABC:
         - stopped: That means that all configuration files should be present on
             the host, but the service should not be running.
         - running: Same as stopped, except that the service should be running.
-        - restart: Meaning that the service should be restarted, regardless of whether
-            it was running or not before.
+        - restart: Same as running, but the service is also restarted when any of
+            its files changed since it started: its unit or quadlet file, its
+            drop-ins, and the config_files of its systemd_unit.
         - removed: All configuration files should be removed.
 
     :attr name: The name of the server, the unit file created will be named accordingly, so
