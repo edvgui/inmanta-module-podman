@@ -104,7 +104,7 @@ def test_model(
         unit = project.get_resource(UNIT)
         assert unit is not None
         assert unit.id.attribute_value == "user/current/container-app.service"
-        assert unit.systemctl_command == ["systemctl", "--user"]
+        assert unit.user == "current"
         assert (
             unit.enabled,
             unit.active,

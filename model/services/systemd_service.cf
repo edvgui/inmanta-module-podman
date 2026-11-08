@@ -231,7 +231,6 @@ implementation service_state for SystemdService:
         user="--user" in self.systemctl_command
             ? (self._resource.owner != null ? self._resource.owner : "current")
             : null,
-        systemctl_command=self.systemctl_command,
         name=self.unit_name,
         # A configured service is only disabled, if it shouldn't be enabled
         enabled=self.state == "configured" and self.enabled ? null : self.enabled,
