@@ -16,7 +16,6 @@
     Contact: edvgui@gmail.com
 """
 import std
-import exec
 import podman
 import files
 import files::systemd_unit
