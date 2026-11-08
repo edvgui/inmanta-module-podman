@@ -69,8 +69,9 @@ entity SystemdService extends SystemdUnitABC:
         - stopped: That means that all configuration files should be present on
             the host, but the service should not be running.
         - running: Same as stopped, except that the service should be running.
-        - restart: Meaning that the service should be restarted, regardless of whether
-            it was running or not before.
+        - restart: Same as running, but the service is also restarted when any of
+            its files changed since it started: its unit or quadlet file, its
+            drop-ins, and the config_files of its systemd_unit.
         - removed: All configuration files should be removed.
 
     :attr name: The name of the server, the unit file created will be named accordingly, so
@@ -88,6 +89,11 @@ entity SystemdService extends SystemdUnitABC:
     :attr systemd_container_dir: The directory in which the quadlet file should be created.
     :attr systemctl_command: The systemctl command to run for this service, defaults to
         ["systemctl"] but can be set to ["systemctl", "--user"] for unprivileged units.
+        Only the presence of --user matters: the unit then belongs to the service
+        manager of the owner of the resource (named "current" when the owner is
+        null, i.e. the user accessing the host), and the via context must run the
+        commands as that user.  All the services of one service manager must use
+        the same via.
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
     :attr quadlet: Whether to generate a quadlet file instead of a systemd unit
