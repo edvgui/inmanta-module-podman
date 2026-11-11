@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.14.0 - ?
+## v1.14.0 - 2026-11-11
 
 - Manage the state of the units of `podman::services::SystemdService` with `files::SystemdUnit` instead of `exec::Run` commands: a unit that fails to start reports its journal, and pending changes show in dry-runs
 - The `restart` state of `podman::services::SystemdService` now only restarts the unit when its files changed since it started, instead of on every deploy.  Other files can be added to `SystemdService.systemd_unit.config_files`
