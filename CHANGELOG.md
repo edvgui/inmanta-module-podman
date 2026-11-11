@@ -2,6 +2,7 @@
 
 ## v1.14.1 - ?
 
+- A `podman::services::SystemdService` of a template unit (`name@.service`) only manages its files, it doesn't get a `files::SystemdUnit` anymore: systemctl can't query a template, only its instances, so the resource always failed (e.g. a template only started by `OnFailure=`, `state="configured"` and `enabled=false`).  `SystemdService.systemd_unit` is now optional
 
 ## v1.14.0 - 2026-11-11
 

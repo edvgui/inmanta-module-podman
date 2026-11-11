@@ -16,6 +16,7 @@
     Contact: edvgui@gmail.com
 """
 import std
+import podman
 import files
 
 
@@ -30,12 +31,13 @@ Relation containing all the runtime resources, these are the resources
 starting and stopping the service.
 """
 
-SystemdService.systemd_unit [1] -- files::SystemdUnit
+SystemdService.systemd_unit [0:1] -- files::SystemdUnit
 """
 The state of the main unit of the service: enabled/disabled and
 started/stopped.  With the restart state, the unit is restarted when any of its
 files changed since it started, other files can be added to its config_files
-relation.
+relation.  None for a template unit (name@.service): a template has no state of
+its own, only its instances do, so only its files are managed.
 """
 
 SystemdService.configuration_resources [0:] -- std::Resource
@@ -226,27 +228,33 @@ implementation service_state for SystemdService:
     """
     Enable/disable and start/stop/restart the main unit of the service.
     """
-    self.systemd_unit = files::SystemdUnit(
-        host=self._resource.host,
-        via=self._resource.via is defined ? self._resource.via : null,
-        # The service manager of the unit, which is the one of the user
-        # running systemctl --user, or the one of the system.
-        user="--user" in self.systemctl_command
-            ? (self._resource.owner != null ? self._resource.owner : "current")
-            : null,
-        name=self.unit_name,
-        # A configured service is only disabled, if it shouldn't be enabled
-        enabled=self.state == "configured" and self.enabled ? null : self.enabled,
-        active=self.state in ["running", "restart"]
-            ? true
-            : self.state == "stopped" ? false : null,
-        restart_on_change=self.state == "restart",
-        purged=self.state == "removed",
-        requires=self.requires,
-        provides=self.provides,
-    )
+    if podman::is_template_unit(self.unit_name):
+        # A template (name@.service) can't be queried, started or enabled,
+        # only its instances can: only its files are managed
+        self.systemd_unit = null
+    else:
+        self.systemd_unit = files::SystemdUnit(
+            host=self._resource.host,
+            via=self._resource.via is defined ? self._resource.via : null,
+            # The service manager of the unit, which is the one of the user
+            # running systemctl --user, or the one of the system.
+            user="--user" in self.systemctl_command
+                ? (self._resource.owner != null ? self._resource.owner : "current")
+                : null,
+            name=self.unit_name,
+            # A configured service is only disabled, if it shouldn't be enabled
+            enabled=self.state == "configured" and self.enabled ? null : self.enabled,
+            active=self.state in ["running", "restart"]
+                ? true
+                : self.state == "stopped" ? false : null,
+            restart_on_change=self.state == "restart",
+            purged=self.state == "removed",
+            requires=self.requires,
+            provides=self.provides,
+        )
 
-    self.runtime_resources += self.systemd_unit
+        self.runtime_resources += self.systemd_unit
+    end
 end
 
 

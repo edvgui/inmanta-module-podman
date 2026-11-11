@@ -47,6 +47,20 @@ def removesuffix(s: str, suffix: str) -> str:
 
 
 @inmanta.plugins.plugin()
+def is_template_unit(name: str) -> bool:
+    """
+    Whether the unit name is the one of a template (e.g. foo@.service), not of
+    a unit or of an instance of a template (e.g. foo@bar.service).  A
+    template has no state of its own: it can't be queried, started or
+    enabled, only its instances can.
+
+    :param name: The name of the unit, with its suffix.
+    """
+    prefix, at, rest = name.partition("@")
+    return bool(prefix) and bool(at) and rest.startswith(".")
+
+
+@inmanta.plugins.plugin()
 def shlex_join(cmd: list[str]) -> str:
     """
     Join all the parts of the command into a string that can safely be parsed
