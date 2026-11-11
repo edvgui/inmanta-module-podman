@@ -44,6 +44,13 @@ implementation unit_file for SystemdAutoUpdate:
     user = self.auto_update.owner
     host = self.auto_update.host
 
+    # The registries must be reachable: wait for the network to be online.  A
+    # user manager can't see the system's network-online.target, podman ships
+    # a user unit that waits for it instead (as for the containers).
+    network_online = "--user" in self.systemctl_command
+        ? "podman-user-wait-network-online.service"
+        : "network-online.target"
+
     # Create the service unit for the pod
     self.unit = files::SystemdUnitFile(
         path=files::path_join(self._systemd_config_dir.path, self.service_name),
@@ -56,11 +63,11 @@ implementation unit_file for SystemdAutoUpdate:
             description=self.description is defined ? self.description : f"Podman auto-update service",
             documentation=["https://github.com/edvgui/inmanta-module-podman"],
             wants=[
-                "network-online.target",
+                network_online,
                 self.on_calendar is defined ? [self.timer_name] : [],
             ],
             after=[
-                "network-online.service",
+                network_online,
             ],
             part_of=[
                 self.on_calendar is defined ? [self.timer_name] : [],

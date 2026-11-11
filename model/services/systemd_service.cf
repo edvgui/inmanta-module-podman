@@ -155,7 +155,10 @@ implementation service_timer for SystemdService:
             unit=Unit(
                 description=self.description is defined ? self.description : f"Podman {self.timer_name}",
                 documentation=["https://github.com/edvgui/inmanta-module-podman"],
-                requires=[self.service_name],
+                # No Requires= on the service: starting the timer (at boot, or
+                # when a deploy starts or restarts it) would start the service
+                # right away, instead of only on the calendar.  Unit= below is
+                # what the timer triggers.
                 on_failure=self.on_failure,
             ),
             timer=Timer(
