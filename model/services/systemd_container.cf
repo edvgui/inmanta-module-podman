@@ -190,14 +190,11 @@ implementation quadlet_file for SystemdContainer:
             ],
             on_failure=self.on_failure,
         ),
-        # Quadlet passes the [Service] section through to the unit it generates
-        service=Service(
-            success_exit_status=self.success_exit_status,
-        ),
         install=Install(
             wanted_by=["default.target", [unit.service_name for unit in self.wanted_by]],
         ),
         container=self.container,
+        success_exit_status=self.success_exit_status,
         send_event=true,
         purged=self.state == "removed",
         requires=self.requires,

@@ -30,7 +30,13 @@ entity QuadletUnitFile extends files::SystemdUnitFile:
     """
     Extension to the systemd unit file that adds the container or pod section
     used by quadlet.
+
+    :attr success_exit_status: SuccessExitStatus= of the unit quadlet generates,
+        written in a [Service] section of its own after the container one, so
+        that the service relation stays free for the users of the module
+        (quadlet and systemd merge the sections of the same name).
     """
+    string[] success_exit_status = []
 end
 QuadletUnitFile.container [0:1] -- Container
 QuadletUnitFile.pod [0:1] -- Pod
