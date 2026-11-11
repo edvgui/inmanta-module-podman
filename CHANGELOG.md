@@ -5,6 +5,8 @@
 - Manage the state of the units of `podman::services::SystemdService` with `files::SystemdUnit` instead of `exec::Run` commands: a unit that fails to start reports its journal, and pending changes show in dry-runs
 - The `restart` state of `podman::services::SystemdService` now only restarts the unit when its files changed since it started, instead of on every deploy.  Other files can be added to `SystemdService.systemd_unit.config_files`
 - The module doesn't depend on the `exec` module anymore
+- The timer of a `podman::services::SystemdService` (`on_calendar`) doesn't `Requires=` its service anymore: starting the timer (at boot, or when a deploy starts or restarts it) ran the service right away, e.g. `podman-auto-update` updated the containers in the middle of the day
+- `podman::services::SystemdAutoUpdate` waits for the network to be online: its unit had `After=network-online.service` (not a unit) instead of `network-online.target`, or `podman-user-wait-network-online.service` for a user manager
 
 ## v1.13.4 - 2026-10-25
 
