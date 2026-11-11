@@ -188,6 +188,9 @@ def test_all_options_in_template(project: Project) -> None:
     content = unit_file_resource.content
 
     expected = [
+        # A container killed by the stop signal (143) isn't a failed unit
+        "[Service]",
+        "SuccessExitStatus=143",
         "[Container]",
         "ContainerName=postgresql-server",
         "Image=docker.io/library/postgres:13",

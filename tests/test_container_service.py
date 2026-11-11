@@ -187,6 +187,8 @@ def test_all_options_in_command(project: Project) -> None:
     # (cgroups=no-conmon, sdnotify=conmon).  They are exercised by the
     # quadlet variant test.
     expected = [
+        # A container killed by the stop signal (143) isn't a failed unit
+        "SuccessExitStatus=143",
         "--module=/etc/containers/containers-extra.conf",
         "--log-level=debug",
         "container run",

@@ -145,7 +145,15 @@ SystemdPod.pod [1] -- podman::Pod
 entity SystemdContainer extends SystemdService:
     """
     Systemd service that is composed of a single container.
+
+    :attr success_exit_status: Exit codes and signal names also considered a
+        successful termination of the container (SuccessExitStatus=).  By default
+        143 (128 + SIGTERM): a container that doesn't handle the stop signal is
+        killed by it and exits with 143, which would otherwise mark the unit as
+        failed, and trigger its on_failure units, on every stop or restart (a
+        deploy, an auto-update).  A container crashing on its own still fails.
     """
+    string[] success_exit_status = ["143"]
 end
 SystemdContainer.container [1] -- podman::Container
 

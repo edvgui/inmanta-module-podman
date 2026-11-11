@@ -123,6 +123,7 @@ implementation unit_file for SystemdContainer:
             ],
             type=self.on_calendar is defined ? "exec" : "notify",
             notify_access="all",
+            success_exit_status=self.success_exit_status,
         ),
         install=Install(
             wanted_by=["default.target", [unit.service_name for unit in self.wanted_by]],
@@ -188,6 +189,10 @@ implementation quadlet_file for SystemdContainer:
                 self.listen_stream is defined ? [self.socket_name] : [],
             ],
             on_failure=self.on_failure,
+        ),
+        # Quadlet passes the [Service] section through to the unit it generates
+        service=Service(
+            success_exit_status=self.success_exit_status,
         ),
         install=Install(
             wanted_by=["default.target", [unit.service_name for unit in self.wanted_by]],
