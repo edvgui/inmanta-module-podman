@@ -4,6 +4,7 @@
 
 - Fail the compile when a value of a quadlet file contains a newline or ends with a backslash, instead of generating a broken quadlet file
 - Fix the compile of quadlet files with a `null` label or annotation value, which is now written as a label without value
+- Allow references in the values of quadlet files
 
 ## v1.14.0 - 2026-11-11
 
