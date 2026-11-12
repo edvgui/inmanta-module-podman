@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.14.2 - ?
+
+
 ## v1.14.1 - 2026-11-12
 
 - Add `podman::services::SystemdContainer.success_exit_status` (`SuccessExitStatus=`), `["143"]` by default: a container that doesn't handle the stop signal exits with 143 when it is stopped, which marked its unit as failed and triggered its `on_failure` units on every restart (deploy, auto-update).  A quadlet gets it in a `[Service]` section of its own (`QuadletUnitFile.success_exit_status`), so the `service` relation of its unit file stays free for users.  Requires files >= 2.13.0
