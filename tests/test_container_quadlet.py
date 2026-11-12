@@ -193,6 +193,9 @@ def test_all_options_in_template(project: Project) -> None:
     content = unit_file_resource.content
 
     expected = [
+        # A container killed by the stop signal (143) isn't a failed unit
+        "[Service]",
+        "SuccessExitStatus=143",
         "[Container]",
         "ContainerName=postgresql-server",
         "Image=docker.io/library/postgres:13",
@@ -380,3 +383,53 @@ def test_references(project: Project, monkeypatch: pytest.MonkeyPatch) -> None:
     # Quoted values are escaped once resolved
     assert 'Environment="POSTGRES_PASSWORD=pass\\"word"' in lines
     assert 'PodmanArgs="--label=a b"' in lines
+
+
+def test_service_section_left_to_the_user(project: Project) -> None:
+    """
+    SuccessExitStatus= is written by the quadlet template, not through the
+    service relation of the unit file: a user can still set that relation
+    (e.g. an ExecStartPost=), both [Service] sections end up in the file and
+    quadlet merges them.
+    """
+    project.compile("""
+        import podman
+        import podman::services
+        import files
+        import files::systemd_unit
+        import mitogen
+        import std
+
+        host = std::Host(
+            name="localhost",
+            remote_agent=true,
+            ip="127.0.0.1",
+            os=std::linux,
+            via=mitogen::Local(),
+        )
+
+        container = podman::Container(
+            host=host,
+            name="app",
+            image="docker.io/library/python:3.13-alpine",
+            command="sleep infinity",
+        )
+
+        service = podman::services::SystemdContainer(
+            container=container,
+            state="running",
+            systemd_unit_dir="/tmp/systemd/user",
+            systemd_container_dir="/tmp/containers/systemd",
+            systemctl_command=["systemctl", "--user"],
+            quadlet=true,
+        )
+        service.unit.service = files::systemd_unit::Service(
+            exec_start_post=["/usr/bin/true"],
+        )
+        """)
+    unit_file = project.get_resource("podman::services::QuadletUnitFile")
+    assert unit_file is not None
+    content = unit_file.content
+    assert "ExecStartPost=/usr/bin/true" in content
+    assert content.count("[Service]") == 2
+    assert content.rstrip().endswith("[Service]\nSuccessExitStatus=143")

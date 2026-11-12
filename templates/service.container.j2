@@ -122,3 +122,8 @@
 {%- for arg in container.podman_args %}
 {{- "PodmanArgs" | files.systemd_unit.directive(arg | files.systemd_unit.quote()) }}
 {%- endfor %}
+{%- if unit_file.success_exit_status %}
+
+[Service]
+{{- "SuccessExitStatus" | files.systemd_unit.directive(unit_file.success_exit_status, joined=true) }}
+{%- endif %}

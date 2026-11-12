@@ -40,6 +40,7 @@ def build_model(
     quadlet: bool = True,
     systemd_unit_dir: str = "/tmp/systemd/user",
     systemd_container_dir: str = "/tmp/containers/systemd",
+    service_name: str | None = None,
 ) -> str:
     return f"""
         import podman
@@ -64,6 +65,7 @@ def build_model(
 
         podman::services::SystemdContainer(
             container=container,
+            {f"name={service_name!r}," if service_name else ""}
             state={state!r},
             enabled={"true" if enabled else "false"},
             systemd_unit_dir={systemd_unit_dir!r},
@@ -122,6 +124,48 @@ def test_model(
         else:
             assert unit_file.id in unit.requires
             assert unit.id not in unit_file.requires
+
+
+@pytest.mark.parametrize("state", ["configured", "removed"])
+def test_template_unit(project: Project, state: str) -> None:
+    """
+    A template unit (name@.service) has no state of its own: systemctl can't
+    query, start or enable it, only its instances.  Only its files are
+    managed, there is no unit resource, and nothing to deploy them before.
+    """
+    for quadlet in [True, False]:
+        project.compile(
+            build_model(
+                "app",
+                state=state,
+                enabled=False,
+                quadlet=quadlet,
+                service_name="container-app@.service",
+            )
+        )
+
+        assert project.get_resource(UNIT) is None
+        unit_file = project.get_resource(
+            "podman::services::QuadletUnitFile" if quadlet else "files::SystemdUnitFile"
+        )
+        assert unit_file is not None
+        assert unit_file.purged == (state == "removed")
+
+
+@pytest.mark.parametrize(
+    ("name", "template"),
+    [
+        ("container-app@.service", True),
+        ("app@.timer", True),
+        ("container-app@instance.service", False),
+        ("container-app.service", False),
+        ("@.service", False),
+    ],
+)
+def test_is_template_unit(name: str, template: bool) -> None:
+    from inmanta_plugins.podman import is_template_unit
+
+    assert is_template_unit(name) is template
 
 
 @pytest.fixture
