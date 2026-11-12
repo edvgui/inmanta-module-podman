@@ -1,266 +1,129 @@
 [Container]
-ContainerName={{ container.name }}
-Image={{ container.image }}
-{%- if container.hostname is not none %}
-HostName={{ container.hostname }}
-{%- endif %}
-{%- for k, v in container.labels.items() %}
-Label={{ k }}{{ "=" + v if v is not none else "" }}
+{{- "ContainerName" | files.systemd_unit.directive(container.name) }}
+{{- "Image" | files.systemd_unit.directive(container.image) }}
+{{- "HostName" | files.systemd_unit.directive(container.hostname) }}
+{#- Index the dicts instead of using items(), to get null values converted to none -#}
+{%- for k in container.labels %}
+{{- "Label" | files.systemd_unit.directive(k ~ ("=" ~ container.labels[k] if container.labels[k] is not none else "")) }}
 {%- endfor %}
-{%- for k, v in container.annotations.items() %}
-Annotation={{ k }}{{ "=" + v if v is not none else "" }}
+{%- for k in container.annotations %}
+{{- "Annotation" | files.systemd_unit.directive(k ~ ("=" ~ container.annotations[k] if container.annotations[k] is not none else "")) }}
 {%- endfor %}
-{%- if container.userns is not none %}
-UserNS={{ container.userns }}
-{%- endif %}
-{%- if container.sub_uid_map is not none %}
-SubUIDMap={{ container.sub_uid_map }}
-{%- endif %}
-{%- if container.sub_gid_map is not none %}
-SubGIDMap={{ container.sub_gid_map }}
-{%- endif %}
-{%- for module in container.containers_conf_module %}
-ContainersConfModule={{ module }}
-{%- endfor %}
+{{- "UserNS" | files.systemd_unit.directive(container.userns) }}
+{{- "SubUIDMap" | files.systemd_unit.directive(container.sub_uid_map) }}
+{{- "SubGIDMap" | files.systemd_unit.directive(container.sub_gid_map) }}
+{{- "ContainersConfModule" | files.systemd_unit.directive(container.containers_conf_module) }}
 {%- for arg in container.global_args %}
-GlobalArgs={{ arg | files.systemd_unit.quote() }}
+{{- "GlobalArgs" | files.systemd_unit.directive(arg | files.systemd_unit.quote()) }}
 {%- endfor %}
-{%- for dns in container.dns %}
-DNS={{ dns }}
+{{- "DNS" | files.systemd_unit.directive(container.dns) }}
+{{- "DNSSearch" | files.systemd_unit.directive(container.dns_search) }}
+{{- "DNSOption" | files.systemd_unit.directive(container.dns_option) }}
+{{- "IP" | files.systemd_unit.directive(container.ip) }}
+{{- "IP6" | files.systemd_unit.directive(container.ip6) }}
+{{- "ShmSize" | files.systemd_unit.directive(container.shm_size) }}
+{%- for name in container.env %}
+{{- "Environment" | files.systemd_unit.directive(name | files.systemd_unit.environment(container.env[name])) }}
 {%- endfor %}
-{%- for search in container.dns_search %}
-DNSSearch={{ search }}
-{%- endfor %}
-{%- for opt in container.dns_option %}
-DNSOption={{ opt }}
-{%- endfor %}
-{%- if container.ip is not none %}
-IP={{ container.ip }}
-{%- endif %}
-{%- if container.ip6 is not none %}
-IP6={{ container.ip6 }}
-{%- endif %}
-{%- if container.shm_size is not none %}
-ShmSize={{ container.shm_size }}
-{%- endif %}
-{%- for name, value in container.env.items() %}
-Environment={{ (name + "=" + value) | files.systemd_unit.quote() }}
-{%- endfor %}
-{%- if container.env_file is not none %}
-EnvironmentFile={{ container.env_file }}
-{%- endif %}
-{%- if container.environment_host %}
-EnvironmentHost=true
-{%- endif %}
-{%- if container.entrypoint is not none %}
-Entrypoint={{ container.entrypoint }}
-{%- endif %}
-{%- if container.command is not none %}
-Exec={{ container.command }}
-{%- endif %}
-{%- if container.user is not none %}
-User={{ container.user }}
-{%- endif %}
-{%- if container.group is not none %}
-Group={{ container.group }}
-{%- endif %}
-{%- for group in container.group_add %}
-GroupAdd={{ group }}
-{%- endfor %}
-{%- if container.working_dir is not none %}
-WorkingDir={{ container.working_dir }}
-{%- endif %}
+{{- "EnvironmentFile" | files.systemd_unit.directive(container.env_file) }}
+{{- "EnvironmentHost" | files.systemd_unit.directive(container.environment_host or none) }}
+{{- "Entrypoint" | files.systemd_unit.directive(container.entrypoint) }}
+{{- "Exec" | files.systemd_unit.directive(container.command) }}
+{{- "User" | files.systemd_unit.directive(container.user) }}
+{{- "Group" | files.systemd_unit.directive(container.group) }}
+{{- "GroupAdd" | files.systemd_unit.directive(container.group_add) }}
+{{- "WorkingDir" | files.systemd_unit.directive(container.working_dir) }}
 {%- for volume in container.volumes %}
-Volume={{ volume.cli_option }}
+{{- "Volume" | files.systemd_unit.directive(volume.cli_option) }}
 {%- endfor %}
-{%- for m in container.mount %}
-Mount={{ m }}
-{%- endfor %}
-{%- for t in container.tmpfs %}
-Tmpfs={{ t }}
-{%- endfor %}
-{%- if container.read_only %}
-ReadOnly=true
-{%- endif %}
-{%- if container.read_only_tmpfs is not none %}
-ReadOnlyTmpfs={{ "true" if container.read_only_tmpfs else "false" }}
-{%- endif %}
-{%- for d in container.add_device %}
-AddDevice={{ d }}
-{%- endfor %}
-{%- for cap in container.add_capability %}
-AddCapability={{ cap }}
-{%- endfor %}
-{%- for cap in container.drop_capability %}
-DropCapability={{ cap }}
-{%- endfor %}
-{%- for port in container.expose_host_port %}
-ExposeHostPort={{ port }}
-{%- endfor %}
-{%- if container.memory is not none %}
-Memory={{ container.memory }}
-{%- endif %}
-{%- if container.pids_limit is not none %}
-PidsLimit={{ container.pids_limit }}
-{%- endif %}
-{%- for u in container.ulimit %}
-Ulimit={{ u }}
-{%- endfor %}
-{%- if container.cgroups_mode is not none %}
-CgroupsMode={{ container.cgroups_mode }}
-{%- endif %}
-{%- if container.log_driver is not none %}
-LogDriver={{ container.log_driver }}
-{%- endif %}
-{%- for opt in container.log_opt %}
-LogOpt={{ opt }}
-{%- endfor %}
-{%- if container.pull is not none %}
-Pull={{ container.pull }}
-{%- endif %}
-{%- if container.run_init %}
-RunInit=true
-{%- endif %}
-{%- if container.stop_signal is not none %}
-StopSignal={{ container.stop_signal }}
-{%- endif %}
-{%- if container.stop_timeout is not none %}
-StopTimeout={{ container.stop_timeout }}
-{%- endif %}
-{%- if container.timezone is not none %}
-TimeZone={{ container.timezone }}
-{%- endif %}
+{{- "Mount" | files.systemd_unit.directive(container.mount) }}
+{{- "Tmpfs" | files.systemd_unit.directive(container.tmpfs) }}
+{{- "ReadOnly" | files.systemd_unit.directive(container.read_only or none) }}
+{{- "ReadOnlyTmpfs" | files.systemd_unit.directive(container.read_only_tmpfs) }}
+{{- "AddDevice" | files.systemd_unit.directive(container.add_device) }}
+{{- "AddCapability" | files.systemd_unit.directive(container.add_capability) }}
+{{- "DropCapability" | files.systemd_unit.directive(container.drop_capability) }}
+{{- "ExposeHostPort" | files.systemd_unit.directive(container.expose_host_port) }}
+{{- "Memory" | files.systemd_unit.directive(container.memory) }}
+{{- "PidsLimit" | files.systemd_unit.directive(container.pids_limit) }}
+{{- "Ulimit" | files.systemd_unit.directive(container.ulimit) }}
+{{- "CgroupsMode" | files.systemd_unit.directive(container.cgroups_mode) }}
+{{- "LogDriver" | files.systemd_unit.directive(container.log_driver) }}
+{{- "LogOpt" | files.systemd_unit.directive(container.log_opt) }}
+{{- "Pull" | files.systemd_unit.directive(container.pull) }}
+{{- "RunInit" | files.systemd_unit.directive(container.run_init or none) }}
+{{- "StopSignal" | files.systemd_unit.directive(container.stop_signal) }}
+{{- "StopTimeout" | files.systemd_unit.directive(container.stop_timeout) }}
+{{- "TimeZone" | files.systemd_unit.directive(container.timezone) }}
 {%- if container.health is defined %}
-{%- if container.health.cmd is not none %}
-HealthCmd={{ container.health.cmd | files.systemd_unit.quote() }}
+{%- set health = container.health %}
+{{- "HealthCmd" | files.systemd_unit.directive(health.cmd | files.systemd_unit.quote() if health.cmd is not none else none) }}
+{{- "HealthInterval" | files.systemd_unit.directive(health.interval) }}
+{{- "HealthRetries" | files.systemd_unit.directive(health.retries) }}
+{{- "HealthTimeout" | files.systemd_unit.directive(health.timeout) }}
+{{- "HealthStartPeriod" | files.systemd_unit.directive(health.start_period) }}
+{{- "HealthStartupCmd" | files.systemd_unit.directive(health.startup_cmd | files.systemd_unit.quote() if health.startup_cmd is not none else none) }}
+{{- "HealthStartupInterval" | files.systemd_unit.directive(health.startup_interval) }}
+{{- "HealthStartupRetries" | files.systemd_unit.directive(health.startup_retries) }}
+{{- "HealthStartupSuccess" | files.systemd_unit.directive(health.startup_success) }}
+{{- "HealthStartupTimeout" | files.systemd_unit.directive(health.startup_timeout) }}
+{{- "HealthLogDestination" | files.systemd_unit.directive(health.log_destination) }}
+{{- "HealthMaxLogCount" | files.systemd_unit.directive(health.max_log_count) }}
+{{- "HealthMaxLogSize" | files.systemd_unit.directive(health.max_log_size) }}
+{{- "HealthOnFailure" | files.systemd_unit.directive(health.on_failure) }}
 {%- endif %}
-{%- if container.health.interval is not none %}
-HealthInterval={{ container.health.interval }}
-{%- endif %}
-{%- if container.health.retries is not none %}
-HealthRetries={{ container.health.retries }}
-{%- endif %}
-{%- if container.health.timeout is not none %}
-HealthTimeout={{ container.health.timeout }}
-{%- endif %}
-{%- if container.health.start_period is not none %}
-HealthStartPeriod={{ container.health.start_period }}
-{%- endif %}
-{%- if container.health.startup_cmd is not none %}
-HealthStartupCmd={{ container.health.startup_cmd | files.systemd_unit.quote() }}
-{%- endif %}
-{%- if container.health.startup_interval is not none %}
-HealthStartupInterval={{ container.health.startup_interval }}
-{%- endif %}
-{%- if container.health.startup_retries is not none %}
-HealthStartupRetries={{ container.health.startup_retries }}
-{%- endif %}
-{%- if container.health.startup_success is not none %}
-HealthStartupSuccess={{ container.health.startup_success }}
-{%- endif %}
-{%- if container.health.startup_timeout is not none %}
-HealthStartupTimeout={{ container.health.startup_timeout }}
-{%- endif %}
-{%- if container.health.log_destination is not none %}
-HealthLogDestination={{ container.health.log_destination }}
-{%- endif %}
-{%- if container.health.max_log_count is not none %}
-HealthMaxLogCount={{ container.health.max_log_count }}
-{%- endif %}
-{%- if container.health.max_log_size is not none %}
-HealthMaxLogSize={{ container.health.max_log_size }}
-{%- endif %}
-{%- if container.health.on_failure is not none %}
-HealthOnFailure={{ container.health.on_failure }}
-{%- endif %}
-{%- endif %}
-{%- if container.notify is not none %}
-Notify={{ container.notify }}
-{%- endif %}
-{%- if container.auto_update is not none %}
-AutoUpdate={{ container.auto_update }}
-{%- endif %}
+{{- "Notify" | files.systemd_unit.directive(container.notify) }}
+{{- "AutoUpdate" | files.systemd_unit.directive(container.auto_update) }}
 {%- if container.pod is defined %}
-Pod={{ container.pod.name }}.pod
+{{- "Pod" | files.systemd_unit.directive(container.pod.name ~ ".pod") }}
 {%- endif %}
-{%- if container.start_with_pod is not none %}
-StartWithPod={{ "true" if container.start_with_pod else "false" }}
-{%- endif %}
+{{- "StartWithPod" | files.systemd_unit.directive(container.start_with_pod) }}
 {%- for network in container.networks %}
-Network={{ network.cli_option }}
+{{- "Network" | files.systemd_unit.directive(network.cli_option) }}
 {%- endfor %}
-{%- for alias in container.network_alias %}
-NetworkAlias={{ alias }}
-{%- endfor %}
+{{- "NetworkAlias" | files.systemd_unit.directive(container.network_alias) }}
 {%- for host in container.hosts %}
-AddHost={{ host.cli_option }}
+{{- "AddHost" | files.systemd_unit.directive(host.cli_option) }}
 {%- endfor %}
 {%- for publish in container.publish %}
-PublishPort={{ publish.cli_option }}
+{{- "PublishPort" | files.systemd_unit.directive(publish.cli_option) }}
 {%- endfor %}
 {%- for uidmap in container.uidmap %}
-UIDMap={{ uidmap.cli_option }}
+{{- "UIDMap" | files.systemd_unit.directive(uidmap.cli_option) }}
 {%- endfor %}
 {%- for gidmap in container.gidmap %}
-GIDMap={{ gidmap.cli_option }}
+{{- "GIDMap" | files.systemd_unit.directive(gidmap.cli_option) }}
 {%- endfor %}
-{%- if container.no_hosts %}
-PodmanArgs=--no-hosts
-{%- endif %}
+{{- "PodmanArgs" | files.systemd_unit.directive("--no-hosts" if container.no_hosts else none) }}
 {%- if container.security_label is defined %}
-{%- if container.security_label.disable %}
-SecurityLabelDisable=true
+{%- set security_label = container.security_label %}
+{{- "SecurityLabelDisable" | files.systemd_unit.directive(security_label.disable or none) }}
+{{- "SecurityLabelType" | files.systemd_unit.directive(security_label.type) }}
+{{- "SecurityLabelLevel" | files.systemd_unit.directive(security_label.level) }}
+{{- "SecurityLabelFileType" | files.systemd_unit.directive(security_label.file_type) }}
+{{- "SecurityLabelNested" | files.systemd_unit.directive(security_label.nested or none) }}
 {%- endif %}
-{%- if container.security_label.type is not none %}
-SecurityLabelType={{ container.security_label.type }}
-{%- endif %}
-{%- if container.security_label.level is not none %}
-SecurityLabelLevel={{ container.security_label.level }}
-{%- endif %}
-{%- if container.security_label.file_type is not none %}
-SecurityLabelFileType={{ container.security_label.file_type }}
-{%- endif %}
-{%- if container.security_label.nested %}
-SecurityLabelNested=true
-{%- endif %}
-{%- endif %}
-{%- if container.seccomp_profile is not none %}
-SeccompProfile={{ container.seccomp_profile }}
-{%- endif %}
-{%- if container.mask is not none %}
-Mask={{ container.mask }}
-{%- endif %}
-{%- if container.unmask is not none %}
-Unmask={{ container.unmask }}
-{%- endif %}
-{%- if container.no_new_privileges %}
-NoNewPrivileges=true
-{%- endif %}
-{%- for k, v in container.sysctl.items() %}
-Sysctl={{ k }}={{ v }}
+{{- "SeccompProfile" | files.systemd_unit.directive(container.seccomp_profile) }}
+{{- "Mask" | files.systemd_unit.directive(container.mask) }}
+{{- "Unmask" | files.systemd_unit.directive(container.unmask) }}
+{{- "NoNewPrivileges" | files.systemd_unit.directive(container.no_new_privileges or none) }}
+{%- for k in container.sysctl %}
+{{- "Sysctl" | files.systemd_unit.directive(k ~ "=" ~ container.sysctl[k]) }}
 {%- endfor %}
-{%- if container.rootfs is not none %}
-Rootfs={{ container.rootfs }}
-{%- endif %}
-{%- if container.http_proxy is not none %}
-HttpProxy={{ "true" if container.http_proxy else "false" }}
-{%- endif %}
-{%- if container.retry is not none %}
-Retry={{ container.retry }}
-{%- endif %}
-{%- if container.retry_delay is not none %}
-RetryDelay={{ container.retry_delay }}
-{%- endif %}
+{{- "Rootfs" | files.systemd_unit.directive(container.rootfs) }}
+{{- "HttpProxy" | files.systemd_unit.directive(container.http_proxy) }}
+{{- "Retry" | files.systemd_unit.directive(container.retry) }}
+{{- "RetryDelay" | files.systemd_unit.directive(container.retry_delay) }}
 {%- for arg in container.extra_args %}
 {%- if arg.cmd == "podman-run" %}
-PodmanArgs={{ ("--" + arg.name + "=" + arg.value if arg.value is not none else "") | files.systemd_unit.quote() }}
+{{- "PodmanArgs" | files.systemd_unit.directive(("--" + arg.name + "=" + arg.value if arg.value is not none else "") | files.systemd_unit.quote()) }}
 {%- endif %}
 {%- endfor %}
 {%- for arg in container.podman_args %}
-PodmanArgs={{ arg | files.systemd_unit.quote() }}
+{{- "PodmanArgs" | files.systemd_unit.directive(arg | files.systemd_unit.quote()) }}
 {%- endfor %}
 {%- if unit_file.success_exit_status %}
 
 [Service]
-SuccessExitStatus={{ unit_file.success_exit_status | join(" ") }}
+{{- "SuccessExitStatus" | files.systemd_unit.directive(unit_file.success_exit_status, joined=true) }}
 {%- endif %}

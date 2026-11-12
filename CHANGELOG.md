@@ -2,8 +2,11 @@
 
 ## v1.14.1 - ?
 
-- Add `podman::services::SystemdContainer.success_exit_status` (`SuccessExitStatus=`), `["143"]` by default: a container that doesn't handle the stop signal exits with 143 when it is stopped, which marked its unit as failed and triggered its `on_failure` units on every restart (deploy, auto-update).  A quadlet gets it in a `[Service]` section of its own (`QuadletUnitFile.success_exit_status`), so the `service` relation of its unit file stays free for users.  Requires files >= 2.12.1
+- Add `podman::services::SystemdContainer.success_exit_status` (`SuccessExitStatus=`), `["143"]` by default: a container that doesn't handle the stop signal exits with 143 when it is stopped, which marked its unit as failed and triggered its `on_failure` units on every restart (deploy, auto-update).  A quadlet gets it in a `[Service]` section of its own (`QuadletUnitFile.success_exit_status`), so the `service` relation of its unit file stays free for users.  Requires files >= 2.13.0
 - A `podman::services::SystemdService` of a template unit (`name@.service`) only manages its files, it doesn't get a `files::SystemdUnit` anymore: systemctl can't query a template, only its instances, so the resource always failed (e.g. a template only started by `OnFailure=`, `state="configured"` and `enabled=false`).  `SystemdService.systemd_unit` is now optional
+- Fail the compile when a value of a quadlet file contains a newline or ends with a backslash, instead of generating a broken quadlet file
+- Fix the compile of quadlet files with a `null` label or annotation value, which is now written as a label without value
+- Allow references in the values of quadlet files, including `env` values and `podman_args`, which are escaped once resolved
 
 ## v1.14.0 - 2026-11-11
 
