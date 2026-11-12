@@ -346,6 +346,8 @@ def test_references(project: Project, monkeypatch: pytest.MonkeyPatch) -> None:
             image=std::create_environment_reference("IMAGE"),
             command=std::create_environment_reference("COMMAND"),
             dns=[std::create_environment_reference("DNS")],
+            env={"POSTGRES_PASSWORD": std::create_environment_reference("PASSWORD")},
+            podman_args=[std::create_environment_reference("PODMAN_ARG")],
         )
 
         podman::services::SystemdContainer(
@@ -369,7 +371,12 @@ def test_references(project: Project, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("IMAGE", "docker.io/library/postgres:13")
     monkeypatch.setenv("COMMAND", "postgres -c max_connections=200")
     monkeypatch.setenv("DNS", "1.1.1.1")
+    monkeypatch.setenv("PASSWORD", 'pass"word')
+    monkeypatch.setenv("PODMAN_ARG", "--label=a b")
     lines = unit_file.content.resolve(PythonLogger(logging.getLogger())).splitlines()
     assert "Image=docker.io/library/postgres:13" in lines
     assert "Exec=postgres -c max_connections=200" in lines
     assert "DNS=1.1.1.1" in lines
+    # Quoted values are escaped once resolved
+    assert 'Environment="POSTGRES_PASSWORD=pass\\"word"' in lines
+    assert 'PodmanArgs="--label=a b"' in lines
