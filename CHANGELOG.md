@@ -4,7 +4,7 @@
 
 - Fail the compile when a value of a quadlet file contains a newline or ends with a backslash, instead of generating a broken quadlet file
 - Fix the compile of quadlet files with a `null` label or annotation value, which is now written as a label without value
-- Allow references in the values of quadlet files
+- Allow references in the values of quadlet files, including `env` values and `podman_args`, which are escaped once resolved
 
 ## v1.14.0 - 2026-11-11
 
