@@ -187,6 +187,18 @@ the container needs, an UnmanagedSystemdUnit).  This doesn't make the
 container depend on them, see dependencies for that.
 """
 
+SystemdContainer.bound_to [0:] -- SystemdUnitABC
+"""
+Other systemd units this container can't outlive: each one is added to the
+``BindsTo=`` and ``After=`` entries of the container unit file.  On top of what
+dependencies does, the container is also stopped when the unit stops on its
+own (e.g. its container crashed), not only when it is stopped explicitly.  E.g.
+a container that joins the network namespace of another one
+(``--network=container:<name>``): podman can't remove, nor recreate, a
+container another one depends on, and the joined namespace doesn't follow a
+new one.  Combine it with wanted_by to start the container again with the unit.
+"""
+
 
 entity SystemdAutoUpdate extends SystemdService:
     """
