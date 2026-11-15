@@ -1,5 +1,8 @@
 # Changelog
 
+## v1.14.3 - ?
+
+
 ## v1.14.2 - 2026-11-15
 
 - Add `podman::services::SystemdContainer.bound_to`, units the container can't outlive (`BindsTo=` and `After=`): it is also stopped when one of them stops on its own, e.g. the container whose network namespace it joins (`--network=container:<name>`) crashed
