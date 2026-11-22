@@ -203,9 +203,18 @@ new one.  Combine it with wanted_by to start the container again with the unit.
 entity SystemdAutoUpdate extends SystemdService:
     """
     Systemd service that manage the auto-update functionality of podman.
+
+    :attr retries: How many times the auto-update is run again when it fails, e.g. on a registry
+        that times out or rate limits one image check: podman then exits with an error, even if
+        all the other images were checked and updated.  The on_failure units are only triggered
+        when the last attempt fails.  0 to never run it again.
+    :attr retry_delay_sec: How long to wait (in seconds) before running the auto-update again
+        after it failed.
     """
     string? on_calendar = "daily"
     string[]? on_failure = null
+    int retries = 2
+    int retry_delay_sec = 600
 end
 SystemdAutoUpdate.auto_update [1] -- podman::AutoUpdate
 
