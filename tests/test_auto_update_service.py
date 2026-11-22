@@ -24,6 +24,7 @@ def test_model(
     state: str = "stopped",
     on_calendar: str | None = None,
     systemctl_command: list[str] | None = None,
+    retries: int | None = None,
 ) -> None:
     if systemctl_command is None:
         systemctl_command = ["systemctl", "--user"]
@@ -54,6 +55,7 @@ def test_model(
             systemd_unit_dir="/tmp/systemd/user",
             systemctl_command={systemctl_command!r},
             {f"on_calendar={on_calendar!r}," if on_calendar else ""}
+            {f"retries={retries!r}," if retries is not None else ""}
         )
     """
 
@@ -131,3 +133,32 @@ def test_timer_does_not_start_the_service(project: Project) -> None:
     assert "Requires=" not in timer
     assert "Unit=podman-auto-update.service" in timer
     assert "OnCalendar=*-*-* 03:00:00" in timer
+
+
+def test_retries_on_failure(project: Project) -> None:
+    """
+    A failed image check (e.g. a registry timeout or rate limit) fails the
+    whole run: it is run again later, and the on_failure units only trigger
+    once the retries are exhausted.  The prune of the replaced images runs
+    whether the run fails or not.
+    """
+    test_model(project)
+    content = _unit_content(project, "podman-auto-update.service")
+    assert "Restart=on-failure" in content
+    assert "RestartSec=600" in content
+    assert "RestartMode=direct" in content
+    assert "StartLimitBurst=3" in content
+    assert "StartLimitIntervalSec=12600" in content
+    assert "ExecStopPost=/usr/bin/podman image prune -f" in content
+    assert "ExecStartPost=" not in content
+
+
+def test_no_retries(project: Project) -> None:
+    """
+    With retries=0, a failed run isn't run again.
+    """
+    test_model(project, retries=0)
+    content = _unit_content(project, "podman-auto-update.service")
+    for directive in ["Restart=", "RestartSec=", "RestartMode=", "StartLimit"]:
+        assert directive not in content
+    assert "ExecStopPost=/usr/bin/podman image prune -f" in content
