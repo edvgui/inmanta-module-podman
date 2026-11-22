@@ -2,7 +2,7 @@
 
 ## v1.14.3 - ?
 
-- `podman::services::SystemdAutoUpdate` runs the auto-update again when it fails (`Restart=on-failure`, `RestartMode=direct`: requires systemd >= 254), `retries` times (2 by default) every `retry_delay_sec` (600 by default), and only triggers its `on_failure` units when the last attempt fails: one image check failing on a registry hiccup (TLS handshake timeout, `toomanyrequests`) failed the whole run, even though the other images were updated.  The image prune now runs in `ExecStopPost=`, so also after a failed run
+- `podman::services::SystemdAutoUpdate` retries a failed auto-update (`retries`, `retry_delay_sec`; requires systemd >= 254) and only triggers its `on_failure` units after the last attempt.  The image prune now also runs after a failed run
 
 ## v1.14.2 - 2026-11-15
 
