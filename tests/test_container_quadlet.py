@@ -16,9 +16,14 @@ limitations under the License.
 Contact: edvgui@gmail.com
 """
 
+import logging
 import pathlib
 
+import pytest
 from pytest_inmanta.plugin import Project, Result
+
+import inmanta.plugins
+from inmanta.agent.handler import PythonLogger
 
 
 def test_model(project: Project, state: str = "stopped") -> None:
@@ -68,7 +73,7 @@ def test_model(project: Project, state: str = "stopped") -> None:
             group_add=["wheel"],
             working_dir="/var/lib/postgresql",
             hostname="db.local",
-            labels={{"role": "database"}},
+            labels={{"role": "database", "standalone": null}},
             annotations={{"io.kubernetes.cri-o.image": "postgres"}},
             no_hosts=true,
             userns="keep-id",
@@ -188,11 +193,15 @@ def test_all_options_in_template(project: Project) -> None:
     content = unit_file_resource.content
 
     expected = [
+        # A container killed by the stop signal (143) isn't a failed unit
+        "[Service]",
+        "SuccessExitStatus=143",
         "[Container]",
         "ContainerName=postgresql-server",
         "Image=docker.io/library/postgres:13",
         "HostName=db.local",
         "Label=role=database",
+        "Label=standalone\n",
         "Annotation=io.kubernetes.cri-o.image=postgres",
         "UserNS=keep-id",
         "SubUIDMap=containers",
@@ -292,7 +301,8 @@ def test_deploy(project: Project) -> None:
         project.deploy_all(
             exclude_all=[
                 "std::AgentConfig",
-                "exec::Run",
+                "files::SystemdUnit",
+                "files::SystemdDaemonReload",
             ],
         ).assert_all()
 
@@ -301,10 +311,128 @@ def test_deploy(project: Project) -> None:
             {
                 r: project.dryrun(r, run_as_root=False)
                 for r in project.resources.values()
-                if (not r.is_type("std::AgentConfig") and not r.is_type("exec::Run"))
+                if (
+                    not r.is_type("std::AgentConfig")
+                    and not r.is_type("files::SystemdUnit")
+                    and not r.is_type("files::SystemdDaemonReload")
+                )
             }
         )
         dry_run_result.assert_has_no_changes()
+
+
+def test_references(project: Project, monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Values of the quadlet file can be references, resolved on deploy.
+    """
+    project.compile(
+        """
+        import podman
+        import podman::container_like
+        import podman::container
+        import podman::services
+        import mitogen
+        import std
+        import files
+
+        host = std::Host(
+            name="localhost",
+            remote_agent=true,
+            ip="127.0.0.1",
+            os=std::linux,
+            via=mitogen::Local(),
+        )
+
+        db = podman::Container(
+            host=host,
+            name="postgresql-server",
+            image=std::create_environment_reference("IMAGE"),
+            command=std::create_environment_reference("COMMAND"),
+            dns=[std::create_environment_reference("DNS")],
+            env={"POSTGRES_PASSWORD": std::create_environment_reference("PASSWORD")},
+            podman_args=[std::create_environment_reference("PODMAN_ARG")],
+        )
+
+        podman::services::SystemdContainer(
+            container=db,
+            state="stopped",
+            enabled=true,
+            systemd_unit_dir="/tmp/systemd/user",
+            systemd_container_dir="/tmp/containers/systemd",
+            systemctl_command=["systemctl", "--user"],
+            quadlet=true,
+        )
+        """,
+        no_dedent=False,
+    )
+
+    unit_file = next(
+        inmanta.plugins.allow_reference_values(f)
+        for f in project.get_instances("files::SystemdUnitFile")
+        if f.path == "/tmp/containers/systemd/container-postgresql-server.container"
+    )
+    monkeypatch.setenv("IMAGE", "docker.io/library/postgres:13")
+    monkeypatch.setenv("COMMAND", "postgres -c max_connections=200")
+    monkeypatch.setenv("DNS", "1.1.1.1")
+    monkeypatch.setenv("PASSWORD", 'pass"word')
+    monkeypatch.setenv("PODMAN_ARG", "--label=a b")
+    lines = unit_file.content.resolve(PythonLogger(logging.getLogger())).splitlines()
+    assert "Image=docker.io/library/postgres:13" in lines
+    assert "Exec=postgres -c max_connections=200" in lines
+    assert "DNS=1.1.1.1" in lines
+    # Quoted values are escaped once resolved
+    assert 'Environment="POSTGRES_PASSWORD=pass\\"word"' in lines
+    assert 'PodmanArgs="--label=a b"' in lines
+
+
+def test_service_section_left_to_the_user(project: Project) -> None:
+    """
+    SuccessExitStatus= is written by the quadlet template, not through the
+    service relation of the unit file: a user can still set that relation
+    (e.g. an ExecStartPost=), both [Service] sections end up in the file and
+    quadlet merges them.
+    """
+    project.compile("""
+        import podman
+        import podman::services
+        import files
+        import files::systemd_unit
+        import mitogen
+        import std
+
+        host = std::Host(
+            name="localhost",
+            remote_agent=true,
+            ip="127.0.0.1",
+            os=std::linux,
+            via=mitogen::Local(),
+        )
+
+        container = podman::Container(
+            host=host,
+            name="app",
+            image="docker.io/library/python:3.13-alpine",
+            command="sleep infinity",
+        )
+
+        service = podman::services::SystemdContainer(
+            container=container,
+            state="running",
+            systemd_unit_dir="/tmp/systemd/user",
+            systemd_container_dir="/tmp/containers/systemd",
+            systemctl_command=["systemctl", "--user"],
+            quadlet=true,
+        )
+        service.unit.service = files::systemd_unit::Service(
+            exec_start_post=["/usr/bin/true"],
+        )
+        """)
+    unit_file = project.get_resource("podman::services::QuadletUnitFile")
+    assert unit_file is not None
+    content = unit_file.content
+    assert "ExecStartPost=/usr/bin/true" in content
+    assert content.count("[Service]") == 2
+    assert content.rstrip().endswith("[Service]\nSuccessExitStatus=143")
 
 
 def quadlet_unit_content(project: Project, on_calendar: str | None) -> str:

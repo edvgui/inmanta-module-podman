@@ -26,6 +26,7 @@ def build_model(
     quadlet: bool = False,
     on_calendar: str | None = None,
     state: str = "stopped",
+    bound: bool = False,
 ) -> str:
     """
     Build a model where an ``app`` container depends on a ``db`` container.
@@ -34,6 +35,8 @@ def build_model(
     :param on_calendar: When set, the dependent service is calendar-triggered
         (like a periodic database dump) instead of being long-running.
     :param state: The desired state for the services.
+    :param bound: When set, the ``app`` container is also bound to the ``db``
+        one (bound_to) and pulled in by it (wanted_by).
     """
     container_dir = (
         'systemd_container_dir="/tmp/containers/systemd",' if quadlet else ""
@@ -85,6 +88,7 @@ def build_model(
             systemctl_command=["systemctl", "--user"],
             quadlet={"true" if quadlet else "false"},
             dependencies=[db_service],
+            {"bound_to=[db_service], wanted_by=[db_service]," if bound else ""}
         )
     """
 
@@ -245,7 +249,8 @@ def test_deploy_with_dependencies(project: Project) -> None:
         project.deploy_all(
             exclude_all=[
                 "std::AgentConfig",
-                "exec::Run",
+                "files::SystemdUnit",
+                "files::SystemdDaemonReload",
             ],
         ).assert_all()
 
@@ -253,7 +258,11 @@ def test_deploy_with_dependencies(project: Project) -> None:
             {
                 r: project.dryrun(r, run_as_root=False)
                 for r in project.resources.values()
-                if (not r.is_type("std::AgentConfig") and not r.is_type("exec::Run"))
+                if (
+                    not r.is_type("std::AgentConfig")
+                    and not r.is_type("files::SystemdUnit")
+                    and not r.is_type("files::SystemdDaemonReload")
+                )
             }
         )
         dry_run_result.assert_has_no_changes()
@@ -336,3 +345,38 @@ def test_wanted_by(project: Project) -> None:
         )
         # Pulled in by the unit, not a dependency of the container
         assert "Requires=mnt-backups.mount" not in content
+
+
+def test_bound_to_in_service_unit(project: Project) -> None:
+    """
+    A container bound to another one references it with both a ``BindsTo=``
+    and an ``After=`` directive in its unit file, and is pulled in by it.
+    """
+    project.compile(build_model(bound=True), no_dedent=False)
+
+    content = _dependent_unit_content(project, quadlet=False)
+    assert "BindsTo=container-postgresql-server.service" in content
+    assert "After=container-postgresql-server.service" in content
+    assert "WantedBy=container-postgresql-server.service" in content
+
+
+def test_bound_to_in_quadlet_unit(project: Project) -> None:
+    """
+    Same as above, but for a container managed through a quadlet unit file.
+    """
+    project.compile(build_model(quadlet=True, bound=True), no_dedent=False)
+
+    content = _dependent_unit_content(project, quadlet=True)
+    assert "BindsTo=container-postgresql-server.service" in content
+    assert "After=container-postgresql-server.service" in content
+    assert "WantedBy=container-postgresql-server.service" in content
+
+
+def test_not_bound_no_binds_to(project: Project) -> None:
+    """
+    A plain dependency doesn't bind the container to it.
+    """
+    project.compile(build_model(quadlet=True), no_dedent=False)
+
+    content = _dependent_unit_content(project, quadlet=True)
+    assert "BindsTo=" not in content

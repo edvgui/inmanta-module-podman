@@ -30,7 +30,13 @@ entity QuadletUnitFile extends files::SystemdUnitFile:
     """
     Extension to the systemd unit file that adds the container or pod section
     used by quadlet.
+
+    :attr success_exit_status: SuccessExitStatus= of the unit quadlet generates,
+        written in a [Service] section of its own after the container one, so
+        that the service relation stays free for the users of the module
+        (quadlet and systemd merge the sections of the same name).
     """
+    string[] success_exit_status = []
 end
 QuadletUnitFile.container [0:1] -- Container
 QuadletUnitFile.pod [0:1] -- Pod
@@ -69,8 +75,9 @@ entity SystemdService extends SystemdUnitABC:
         - stopped: That means that all configuration files should be present on
             the host, but the service should not be running.
         - running: Same as stopped, except that the service should be running.
-        - restart: Meaning that the service should be restarted, regardless of whether
-            it was running or not before.
+        - restart: Same as running, but the service is also restarted when any of
+            its files changed since it started: its unit or quadlet file, its
+            drop-ins, and the config_files of its systemd_unit.
         - removed: All configuration files should be removed.
 
     :attr name: The name of the server, the unit file created will be named accordingly, so
@@ -88,6 +95,11 @@ entity SystemdService extends SystemdUnitABC:
     :attr systemd_container_dir: The directory in which the quadlet file should be created.
     :attr systemctl_command: The systemctl command to run for this service, defaults to
         ["systemctl"] but can be set to ["systemctl", "--user"] for unprivileged units.
+        Only the presence of --user matters: the unit then belongs to the service
+        manager of the owner of the resource (named "current" when the owner is
+        null, i.e. the user accessing the host), and the via context must run the
+        commands as that user.  All the services of one service manager must use
+        the same via.
     :attr state: The desired execution state for this service.
     :attr enabled: Whether the systemd service should be enabled.
     :attr quadlet: Whether to generate a quadlet file instead of a systemd unit
@@ -139,7 +151,15 @@ SystemdPod.pod [1] -- podman::Pod
 entity SystemdContainer extends SystemdService:
     """
     Systemd service that is composed of a single container.
+
+    :attr success_exit_status: Exit codes and signal names also considered a
+        successful termination of the container (SuccessExitStatus=).  By default
+        143 (128 + SIGTERM): a container that doesn't handle the stop signal is
+        killed by it and exits with 143, which would otherwise mark the unit as
+        failed, and trigger its on_failure units, on every stop or restart (a
+        deploy, an auto-update).  A container crashing on its own still fails.
     """
+    string[] success_exit_status = ["143"]
 end
 SystemdContainer.container [1] -- podman::Container
 
@@ -167,13 +187,34 @@ the container needs, an UnmanagedSystemdUnit).  This doesn't make the
 container depend on them, see dependencies for that.
 """
 
+SystemdContainer.bound_to [0:] -- SystemdUnitABC
+"""
+Other systemd units this container can't outlive: each one is added to the
+``BindsTo=`` and ``After=`` entries of the container unit file.  On top of what
+dependencies does, the container is also stopped when the unit stops on its
+own (e.g. its container crashed), not only when it is stopped explicitly.  E.g.
+a container that joins the network namespace of another one
+(``--network=container:<name>``): podman can't remove, nor recreate, a
+container another one depends on, and the joined namespace doesn't follow a
+new one.  Combine it with wanted_by to start the container again with the unit.
+"""
+
 
 entity SystemdAutoUpdate extends SystemdService:
     """
     Systemd service that manage the auto-update functionality of podman.
+
+    :attr retries: How many times the auto-update is run again when it fails, e.g. on a registry
+        that times out or rate limits one image check: podman then exits with an error, even if
+        all the other images were checked and updated.  The on_failure units are only triggered
+        when the last attempt fails.  0 to never run it again.
+    :attr retry_delay_sec: How long to wait (in seconds) before running the auto-update again
+        after it failed.
     """
     string? on_calendar = "daily"
     string[]? on_failure = null
+    int retries = 2
+    int retry_delay_sec = 600
 end
 SystemdAutoUpdate.auto_update [1] -- podman::AutoUpdate
 
@@ -183,9 +224,11 @@ implementation container_file_content for QuadletUnitFile:
     Resolve the content of the unit file, generate it from a jinja template.
     """
     # Load the content based on the template
-    self.content = (
-        files::jinja("template://files/systemd_unit.j2", unit_file=self, container=self.container)
-        + files::jinja("template://podman/service.container.j2", unit_file=self, container=self.container)
+    self.content = files::concat(
+        [
+            files::jinja("template://files/systemd_unit.j2", unit_file=self, container=self.container),
+            files::jinja("template://podman/service.container.j2", unit_file=self, container=self.container),
+        ]
     )
 end
 
@@ -195,9 +238,11 @@ implementation pod_file_content for QuadletUnitFile:
     Resolve the content of the unit file for a pod, generate it from a jinja template.
     """
     # Load the content based on the template
-    self.content = (
-        files::jinja("template://files/systemd_unit.j2", unit_file=self, pod=self.pod)
-        + files::jinja("template://podman/service.pod.j2", unit_file=self, pod=self.pod)
+    self.content = files::concat(
+        [
+            files::jinja("template://files/systemd_unit.j2", unit_file=self, pod=self.pod),
+            files::jinja("template://podman/service.pod.j2", unit_file=self, pod=self.pod),
+        ]
     )
 end
 

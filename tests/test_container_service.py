@@ -187,6 +187,8 @@ def test_all_options_in_command(project: Project) -> None:
     # (cgroups=no-conmon, sdnotify=conmon).  They are exercised by the
     # quadlet variant test.
     expected = [
+        # A container killed by the stop signal (143) isn't a failed unit
+        "SuccessExitStatus=143",
         "--module=/etc/containers/containers-extra.conf",
         "--log-level=debug",
         "container run",
@@ -323,7 +325,8 @@ def test_deploy(project: Project) -> None:
         project.deploy_all(
             exclude_all=[
                 "std::AgentConfig",
-                "exec::Run",
+                "files::SystemdUnit",
+                "files::SystemdDaemonReload",
             ],
         ).assert_all()
 
@@ -332,7 +335,11 @@ def test_deploy(project: Project) -> None:
             {
                 r: project.dryrun(r, run_as_root=False)
                 for r in project.resources.values()
-                if (not r.is_type("std::AgentConfig") and not r.is_type("exec::Run"))
+                if (
+                    not r.is_type("std::AgentConfig")
+                    and not r.is_type("files::SystemdUnit")
+                    and not r.is_type("files::SystemdDaemonReload")
+                )
             }
         )
         dry_run_result.assert_has_no_changes()

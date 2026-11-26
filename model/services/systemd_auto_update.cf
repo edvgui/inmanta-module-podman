@@ -16,7 +16,6 @@
     Contact: edvgui@gmail.com
 """
 import std
-import exec
 import podman
 import files
 import files::systemd_unit
@@ -45,6 +44,13 @@ implementation unit_file for SystemdAutoUpdate:
     user = self.auto_update.owner
     host = self.auto_update.host
 
+    # The registries must be reachable: wait for the network to be online.  A
+    # user manager can't see the system's network-online.target, podman ships
+    # a user unit that waits for it instead (as for the containers).
+    network_online = "--user" in self.systemctl_command
+        ? "podman-user-wait-network-online.service"
+        : "network-online.target"
+
     # Create the service unit for the pod
     self.unit = files::SystemdUnitFile(
         path=files::path_join(self._systemd_config_dir.path, self.service_name),
@@ -57,23 +63,39 @@ implementation unit_file for SystemdAutoUpdate:
             description=self.description is defined ? self.description : f"Podman auto-update service",
             documentation=["https://github.com/edvgui/inmanta-module-podman"],
             wants=[
-                "network-online.target",
+                network_online,
                 self.on_calendar is defined ? [self.timer_name] : [],
             ],
             after=[
-                "network-online.service",
+                network_online,
             ],
             part_of=[
                 self.on_calendar is defined ? [self.timer_name] : [],
             ],
             on_failure=self.on_failure,
+            # Allow the first run and its retries, then give up: the unit fails
+            # and triggers its on_failure units.  The interval leaves an hour
+            # per run for the checks and pulls, so that the limit is reached
+            # before the counter resets.
+            start_limit_burst=self.retries > 0 ? self.retries + 1 : null,
+            start_limit_interval_sec=self.retries > 0
+                ? (self.retries + 1) * (self.retry_delay_sec + 3600)
+                : null,
         ),
         service=Service(
             exec_start=auto_update(self.auto_update),
-            exec_start_post=[
+            # Remove the images that the update replaced, also when the update
+            # failed on another image (ExecStartPost= only runs on success).
+            exec_stop_post=[
                 "/usr/bin/podman image prune -f",
             ],
             type="oneshot",
+            restart=self.retries > 0 ? "on-failure" : null,
+            restart_sec=self.retries > 0 ? self.retry_delay_sec : null,
+            # Go straight back to activating between the attempts, without
+            # the failed state: otherwise each failed attempt triggers the
+            # on_failure units (systemd >= 254).
+            extra=self.retries > 0 ? {"RestartMode": "direct"} : {},
         ),
         install=Install(
             wanted_by=["default.target"],

@@ -1,8 +1,29 @@
 # Changelog
 
-## v1.13.5 - ?
+## v1.14.3 - ?
 
 - Restart a quadlet container service when it fails (`Restart=on-failure`, `RestartSec=10`), like the non-quadlet one already did, unless it runs on a timer
+- `podman::services::SystemdAutoUpdate` retries a failed auto-update (`retries`, `retry_delay_sec`; requires systemd >= 254) and only triggers its `on_failure` units after the last attempt.  The image prune now also runs after a failed run
+
+## v1.14.2 - 2026-11-15
+
+- Add `podman::services::SystemdContainer.bound_to`, units the container can't outlive (`BindsTo=` and `After=`): it is also stopped when one of them stops on its own, e.g. the container whose network namespace it joins (`--network=container:<name>`) crashed
+
+## v1.14.1 - 2026-11-12
+
+- Add `podman::services::SystemdContainer.success_exit_status` (`SuccessExitStatus=`), `["143"]` by default: a container that doesn't handle the stop signal exits with 143 when it is stopped, which marked its unit as failed and triggered its `on_failure` units on every restart (deploy, auto-update).  A quadlet gets it in a `[Service]` section of its own (`QuadletUnitFile.success_exit_status`), so the `service` relation of its unit file stays free for users.  Requires files >= 2.13.0
+- A `podman::services::SystemdService` of a template unit (`name@.service`) only manages its files, it doesn't get a `files::SystemdUnit` anymore: systemctl can't query a template, only its instances, so the resource always failed (e.g. a template only started by `OnFailure=`, `state="configured"` and `enabled=false`).  `SystemdService.systemd_unit` is now optional
+- Fail the compile when a value of a quadlet file contains a newline or ends with a backslash, instead of generating a broken quadlet file
+- Fix the compile of quadlet files with a `null` label or annotation value, which is now written as a label without value
+- Allow references in the values of quadlet files, including `env` values and `podman_args`, which are escaped once resolved
+
+## v1.14.0 - 2026-11-11
+
+- Manage the state of the units of `podman::services::SystemdService` with `files::SystemdUnit` instead of `exec::Run` commands: a unit that fails to start reports its journal, and pending changes show in dry-runs
+- The `restart` state of `podman::services::SystemdService` now only restarts the unit when its files changed since it started, instead of on every deploy.  Other files can be added to `SystemdService.systemd_unit.config_files`
+- The module doesn't depend on the `exec` module anymore
+- The timer of a `podman::services::SystemdService` (`on_calendar`) doesn't `Requires=` its service anymore: starting the timer (at boot, or when a deploy starts or restarts it) ran the service right away, e.g. `podman-auto-update` updated the containers in the middle of the day
+- `podman::services::SystemdAutoUpdate` waits for the network to be online: its unit had `After=network-online.service` (not a unit) instead of `network-online.target`, or `podman-user-wait-network-online.service` for a user manager
 
 ## v1.13.4 - 2026-10-25
 
